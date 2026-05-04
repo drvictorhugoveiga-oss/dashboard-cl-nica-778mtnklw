@@ -9,6 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 const data = [
   { plan: 'VIVA 1', count: 5, revenue: 'R$ 45.200,00' },
