@@ -1,10 +1,9 @@
 import pb from '@/lib/pocketbase/client'
 
-export const getPatientNotes = (patientId: string) =>
+export const getAllPatientNotes = () =>
   pb.collection('patient_notes').getFullList({
-    filter: `patient_id = "${patientId}"`,
     sort: '-created',
-    expand: 'professional_id,created_by',
+    expand: 'professional_id,created_by,patient_id',
   })
 
 export const createPatientNote = (data: any) => pb.collection('patient_notes').create(data)
