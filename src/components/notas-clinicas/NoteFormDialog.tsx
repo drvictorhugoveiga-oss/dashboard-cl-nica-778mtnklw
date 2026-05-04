@@ -38,10 +38,7 @@ import { Button } from '@/components/ui/button'
 
 const formSchema = z.object({
   professional_id: z.string().min(1, 'Profissional é obrigatório'),
-  content: z
-    .string()
-    .min(10, 'O conteúdo deve ter pelo menos 10 caracteres')
-    .max(500, 'O conteúdo não pode exceder 500 caracteres'),
+  content: z.string().min(10, 'O conteúdo deve ter pelo menos 10 caracteres'),
 })
 
 export function NoteFormDialog({
@@ -97,8 +94,6 @@ export function NoteFormDialog({
       setIsSubmitting(false)
     }
   }
-
-  const contentValue = form.watch('content') || ''
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -175,9 +170,8 @@ export function NoteFormDialog({
                       <div className="relative">
                         <Textarea
                           placeholder="Descreva as observações clínicas..."
-                          maxLength={500}
                           className={cn(
-                            'min-h-[200px] pr-10 rounded-lg border-gray-200 resize-none',
+                            'min-h-[200px] pr-10 rounded-lg border-gray-200 resize-y',
                             fieldState.error && 'border-destructive focus-visible:ring-destructive',
                             fieldState.isDirty &&
                               !fieldState.invalid &&
@@ -191,9 +185,6 @@ export function NoteFormDialog({
                         {fieldState.isDirty && !fieldState.invalid && (
                           <Check className="absolute right-3 top-3 h-5 w-5 text-success pointer-events-none" />
                         )}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1 text-right">
-                        {contentValue.length} / 500
                       </div>
                     </div>
                   </FormControl>
