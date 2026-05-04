@@ -1,5 +1,14 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, ShieldPlus, Users, Bell, Settings, HeartPulse } from 'lucide-react'
+import {
+  LayoutDashboard,
+  ShieldPlus,
+  Users,
+  Bell,
+  Settings,
+  HeartPulse,
+  LogOut,
+} from 'lucide-react'
+import { useAuth } from '@/hooks/use-auth'
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +29,11 @@ const navigation = [
 
 export function AppSidebar() {
   const location = useLocation()
+  const { user, signOut } = useAuth()
+
+  const filteredNav = navigation.filter(
+    (item) => item.name !== 'Configurações' || user?.role === 'admin',
+  )
 
   return (
     <Sidebar>
@@ -33,7 +47,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="px-2 py-4">
         <SidebarMenu>
-          {navigation.map((item) => {
+          {filteredNav.map((item) => {
             const isActive = location.pathname === item.href
             return (
               <SidebarMenuItem key={item.name}>
@@ -59,13 +73,22 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4 bg-sidebar">
         <div className="flex items-center gap-3">
-          <div className="size-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-medium">
-            AD
+          <div className="size-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-medium uppercase shrink-0">
+            {user?.name?.[0] || user?.email?.[0] || 'U'}
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium leading-none">Admin User</span>
-            <span className="text-xs text-sidebar-foreground/60 mt-1">admin@clinicaviva.com</span>
+          <div className="flex flex-col flex-1 truncate mr-2">
+            <span className="text-sm font-medium leading-none truncate">
+              {user?.name || 'Usuário'}
+            </span>
+            <span className="text-xs text-sidebar-foreground/60 mt-1 truncate">{user?.email}</span>
           </div>
+          <button
+            onClick={signOut}
+            className="p-2 hover:bg-sidebar-accent rounded-md text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors shrink-0"
+            title="Sair"
+          >
+            <LogOut className="size-4" />
+          </button>
         </div>
       </SidebarFooter>
     </Sidebar>

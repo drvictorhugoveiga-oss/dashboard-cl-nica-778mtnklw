@@ -3,14 +3,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { Cake } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { Birthday } from '@/hooks/use-dashboard-data'
 
-const data = [
-  { name: 'Ana Silva', date: '15 de abril', plan: 'VIVA 1', isCurrentMonth: true },
-  { name: 'Carlos Oliveira', date: '22 de abril', plan: 'VIVA 2', isCurrentMonth: true },
-  { name: 'João Santos', date: '05 de maio', plan: 'VIVA 3', isCurrentMonth: false },
-]
+interface Props {
+  isLoading: boolean
+  data?: Birthday[]
+}
 
-export function UpcomingBirthdays({ isLoading }: { isLoading: boolean }) {
+export function UpcomingBirthdays({ isLoading, data = [] }: Props) {
   return (
     <Card
       className="lg:col-span-1 transition-all duration-200 ease-out hover:shadow-subtle animate-fade-in border-border rounded-lg"
@@ -37,7 +37,7 @@ export function UpcomingBirthdays({ isLoading }: { isLoading: boolean }) {
                 </div>
               ))
             : data.map((person, index) => (
-                <div key={person.name} className="flex flex-col">
+                <div key={person.id} className="flex flex-col">
                   <div
                     className={cn(
                       'flex items-center gap-4 p-4 transition-colors duration-200 ease-out',
@@ -67,7 +67,7 @@ export function UpcomingBirthdays({ isLoading }: { isLoading: boolean }) {
               ))}
           {!isLoading && data.length === 0 && (
             <div className="text-center text-sm text-muted-foreground py-6">
-              Nenhum aniversariante.
+              Nenhum aniversariante no mês.
             </div>
           )}
         </div>

@@ -10,15 +10,19 @@ import {
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import type { PlanStats } from '@/hooks/use-dashboard-data'
 
-const data = [
-  { plan: 'VIVA 1', count: 5, revenue: 'R$ 45.200,00' },
-  { plan: 'VIVA 2', count: 3, revenue: 'R$ 45.000,00' },
-  { plan: 'VIVA 3', count: 2, revenue: 'R$ 44.800,00' },
-  { plan: 'VIVA ANUAL', count: 1, revenue: 'R$ 44.000,00' },
-]
+interface Props {
+  isLoading: boolean
+  data?: PlanStats[]
+  totalCount?: number
+  totalRevenue?: number
+}
 
-export function PatientsByPlan({ isLoading }: { isLoading: boolean }) {
+export function PatientsByPlan({ isLoading, data = [], totalCount = 0, totalRevenue = 0 }: Props) {
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
+
   return (
     <Card
       className="lg:col-span-2 transition-all duration-200 ease-out hover:shadow-subtle animate-fade-in border-border rounded-lg"
@@ -60,18 +64,25 @@ export function PatientsByPlan({ isLoading }: { isLoading: boolean }) {
                     >
                       <TableCell className="font-medium">{item.plan}</TableCell>
                       <TableCell className="text-right">{item.count} pacientes</TableCell>
-                      <TableCell className="text-right">{item.revenue}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(item.revenue)}</TableCell>
                     </TableRow>
                   ))}
+                  {data.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
+                        Nenhum paciente ativo.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
                 <TableFooter className="bg-transparent border-t border-border">
                   <TableRow className="hover:bg-transparent">
                     <TableCell className="font-bold text-foreground">Total</TableCell>
                     <TableCell className="text-right font-bold text-foreground">
-                      11 pacientes
+                      {totalCount} pacientes
                     </TableCell>
                     <TableCell className="text-right font-bold text-primary">
-                      R$ 179.000,00
+                      {formatCurrency(totalRevenue)}
                     </TableCell>
                   </TableRow>
                 </TableFooter>
@@ -93,13 +104,18 @@ export function PatientsByPlan({ isLoading }: { isLoading: boolean }) {
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Receita:</span>
-                    <span className="font-bold text-primary">{item.revenue}</span>
+                    <span className="font-bold text-primary">{formatCurrency(item.revenue)}</span>
                   </div>
                 </div>
               ))}
+              {data.length === 0 && (
+                <div className="text-center text-muted-foreground py-6 text-sm">
+                  Nenhum paciente ativo.
+                </div>
+              )}
               <div className="border-t border-border mt-2 pt-4 flex justify-between items-center">
-                <span className="font-bold">Total (11 pct)</span>
-                <span className="font-bold text-primary">R$ 179.000,00</span>
+                <span className="font-bold">Total ({totalCount} pct)</span>
+                <span className="font-bold text-primary">{formatCurrency(totalRevenue)}</span>
               </div>
             </div>
           </>

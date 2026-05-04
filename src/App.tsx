@@ -9,23 +9,31 @@ import Lembretes from './pages/Lembretes'
 import Configuracoes from './pages/Configuracoes'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
+import Login from './pages/Login'
+import { AuthProvider } from './hooks/use-auth'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Index />} />
-          <Route path="/planos" element={<Planos />} />
-          <Route path="/profissionais" element={<Profissionais />} />
-          <Route path="/lembretes" element={<Lembretes />} />
-          <Route path="/configuracoes" element={<Configuracoes />} />
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/planos" element={<Planos />} />
+              <Route path="/profissionais" element={<Profissionais />} />
+              <Route path="/lembretes" element={<Lembretes />} />
+              <Route path="/configuracoes" element={<Configuracoes />} />
+            </Route>
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </TooltipProvider>
+    </AuthProvider>
   </BrowserRouter>
 )
 

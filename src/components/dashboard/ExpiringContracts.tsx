@@ -3,21 +3,15 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
+import type { ExpiringContract } from '@/hooks/use-dashboard-data'
 
-const data = [{ name: 'Mariana Santos', days: 26 }]
+interface Props {
+  isLoading: boolean
+  data?: ExpiringContract[]
+  onRenew: (patientId: string, planId: string) => void
+}
 
-export function ExpiringContracts({ isLoading }: { isLoading: boolean }) {
-  const { toast } = useToast()
-
-  const handleRenew = () => {
-    toast({
-      title: 'Renovação iniciada',
-      description: 'O processo de renovação foi iniciado com sucesso.',
-      duration: 3000,
-    })
-  }
-
+export function ExpiringContracts({ isLoading, data = [], onRenew }: Props) {
   return (
     <Card
       className="lg:col-span-1 transition-all duration-200 ease-out hover:shadow-subtle animate-fade-in border-border rounded-lg"
@@ -35,7 +29,7 @@ export function ExpiringContracts({ isLoading }: { isLoading: boolean }) {
           ) : (
             data.map((contract) => (
               <div
-                key={contract.name}
+                key={contract.id}
                 className="flex flex-col gap-3 p-4 rounded-lg border border-destructive/20 bg-destructive/5 transition-colors hover:bg-destructive/10"
               >
                 <div className="flex items-center justify-between">
@@ -55,7 +49,7 @@ export function ExpiringContracts({ isLoading }: { isLoading: boolean }) {
                     variant="secondary"
                     size="sm"
                     className="h-8 text-xs font-bold w-full sm:w-auto transition-colors"
-                    onClick={handleRenew}
+                    onClick={() => onRenew(contract.id, contract.planId)}
                   >
                     Renovar
                   </Button>
