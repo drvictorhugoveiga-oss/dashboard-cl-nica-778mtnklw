@@ -63,34 +63,51 @@ export default function Lembretes() {
   const handleComplete = async (id: string) => {
     try {
       await updateReminder(id, { status: 'completed' })
-      toast({ title: 'Lembrete concluído' })
+      toast({
+        title: 'Lembrete concluído',
+        duration: 3000,
+        className: 'bg-success text-success-foreground',
+      })
       loadData()
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Erro', description: getErrorMessage(error) })
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: getErrorMessage(error),
+        duration: 3000,
+      })
     }
   }
 
   const handleDelete = async (id: string) => {
     try {
       await deleteReminder(id)
-      toast({ title: 'Lembrete deletado' })
+      toast({ title: 'Lembrete deletado', duration: 3000 })
       loadData()
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Erro', description: getErrorMessage(error) })
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: getErrorMessage(error),
+        duration: 3000,
+      })
     }
   }
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Lembretes e Follow-ups</h1>
-        <Button onClick={() => handleOpenDialog()} className="bg-primary hover:bg-primary/90">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-[24px] font-bold tracking-tight">Lembretes e Follow-ups</h1>
+        <Button
+          onClick={() => handleOpenDialog()}
+          className="bg-primary text-primary-foreground hover:shadow-elevation hover:bg-primary/90 transition-all duration-200"
+        >
           <Plus className="size-4 mr-2" />
           Novo Lembrete
         </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-row gap-4 mb-6">
         <div className="w-full sm:w-64">
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger>
@@ -133,9 +150,11 @@ export default function Lembretes() {
       />
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{editingReminder ? 'Editar Lembrete' : 'Novo Lembrete'}</DialogTitle>
+        <DialogContent className="sm:max-w-[500px] rounded-[8px] bg-card p-6 shadow-elevation animate-fade-in duration-200">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-[20px] font-bold">
+              {editingReminder ? 'Editar Lembrete' : 'Novo Lembrete'}
+            </DialogTitle>
           </DialogHeader>
           <ReminderForm
             initialData={editingReminder}

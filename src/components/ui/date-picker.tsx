@@ -7,19 +7,29 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
-export function DatePicker({ value, onChange }: { value?: Date; onChange: (date?: Date) => void }) {
+export function DatePicker({
+  value,
+  onChange,
+  error,
+}: {
+  value?: Date
+  onChange: (date?: Date) => void
+  error?: boolean
+}) {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
           variant={'outline'}
           className={cn(
-            'w-full justify-start text-left font-normal',
+            'w-full justify-start text-left font-normal rounded-[8px] transition-colors',
             !value && 'text-muted-foreground',
+            error &&
+              'border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive',
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, 'PPP', { locale: ptBR }) : <span>Selecione uma data</span>}
+          {value ? format(value, 'dd/MM/yyyy') : <span>Selecione uma data</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

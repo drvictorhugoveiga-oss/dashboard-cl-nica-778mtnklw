@@ -113,12 +113,57 @@
     animation: fade-in-up 0.3s ease-out both;
   }
 
+  .bg-highlight-red {
+    background-color: hsl(0 84% 95%);
+    color: hsl(0 84% 60%);
+  }
+  .dark .bg-highlight-red {
+    background-color: hsl(0 84% 15%);
+    color: hsl(0 84% 60%);
+  }
+
+  .bg-highlight-blue {
+    background-color: hsl(212 100% 95%);
+    color: hsl(212 100% 48%);
+  }
+  .dark .bg-highlight-blue {
+    background-color: hsl(212 100% 15%);
+    color: hsl(212 100% 48%);
+  }
+
+  .bg-highlight-green {
+    background-color: hsl(142 71% 95%);
+    color: hsl(142 71% 45%);
+  }
+  .dark .bg-highlight-green {
+    background-color: hsl(142 71% 15%);
+    color: hsl(142 71% 45%);
+  }
+
+  .table-header-custom {
+    background-color: hsl(100 100% 97%);
+  }
+  .dark .table-header-custom {
+    background-color: hsl(100 20% 15%);
+  }
+
   @keyframes shimmer {
     0% {
-      transform: translateX(-100%);
+      background-position: 200% 0;
     }
     100% {
-      transform: translateX(100%);
+      background-position: -200% 0;
     }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--background)) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
   }
 }

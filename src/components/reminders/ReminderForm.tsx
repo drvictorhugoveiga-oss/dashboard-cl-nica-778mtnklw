@@ -26,16 +26,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { AlertCircle, CheckCircle } from 'lucide-react'
 import { TYPE_LABELS, STATUS_LABELS } from './constants'
+import { cn } from '@/lib/utils'
 
-const schema = z.object({
-  patient_id: z.string().min(1, 'Paciente é obrigatório'),
-  type: z.enum(['follow_up', 'renewal_warning', 'contract_end', 'birthday']),
-  title: z.string().min(1, 'Título é obrigatório'),
-  description: z.string().optional(),
-  scheduled_date: z.date({ required_error: 'Data é obrigatória' }),
-  status: z.enum(['pending', 'completed', 'cancelled']).default('pending'),
-})
+const schema = z
+  .object({
+    patient_id: z.string().min(1, 'Paciente é obrigatório'),
+    type: z.enum(['follow_up', 'renewal_warning', 'contract_end', 'birthday']),
+    title: z.string().min(1, 'Título é obrigatório'),
+    description: z.string().optional(),
+    scheduled_date: z.date({ required_error: 'Data é obrigatória' }),
+    status: z.enum(['pending', 'completed', 'cancelled']).default('pending'),
+  })
+  .refine(
+    (data) => {
+      if (data.status === 'pending' && data.scheduled_date) {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        return data.scheduled_date >= today
+      }
+      return true
+    },
+    {
+      message: 'Não é possível agendar um lembrete pendente no passado',
+      path: ['scheduled_date'],
+    },
+  )
 
 type FormValues = z.infer<typeof schema>
 
@@ -81,14 +98,27 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
       }
       if (initialData) {
         await updateReminder(initialData.id, payload)
-        toast({ title: 'Lembrete atualizado com sucesso' })
+        toast({
+          title: 'Lembrete atualizado com sucesso',
+          duration: 3000,
+          className: 'bg-success text-success-foreground',
+        })
       } else {
         await createReminder(payload)
-        toast({ title: 'Lembrete criado com sucesso' })
+        toast({
+          title: 'Lembrete criado com sucesso',
+          duration: 3000,
+          className: 'bg-success text-success-foreground',
+        })
       }
       onSuccess()
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Erro', description: getErrorMessage(error) })
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: getErrorMessage(error),
+        duration: 3000,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -96,13 +126,13 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-[16px]">
         <FormField
           control={form.control}
           name="patient_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Paciente</FormLabel>
+          render={({ field, fieldState }) => (
+            <FormItem className="space-y-2">
+              <FormLabel className="text-sm font-medium">Paciente</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -117,7 +147,7 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="text-xs text-destructive" />
             </FormItem>
           )}
         />
@@ -125,9 +155,9 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
           <FormField
             control={form.control}
             name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo</FormLabel>
+            render={({ field, fieldState }) => (
+              <FormItem className="space-y-2">
+                <FormLabel className="text-sm font-medium">Tipo</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
@@ -142,32 +172,54 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
+                <FormMessage className="text-xs text-destructive" />
               </FormItem>
             )}
           />
           <FormField
             control={form.control}
             name="scheduled_date"
-            render={({ field }) => (
-              <FormItem className="flex flex-col pt-2.5">
-                <FormLabel className="mb-1">Data Agendada</FormLabel>
-                <DatePicker value={field.value} onChange={field.onChange} />
-                <FormMessage />
+            render={({ field, fieldState }) => (
+              <FormItem className="flex flex-col pt-1 space-y-2">
+                <FormLabel className="text-sm font-medium">Data Agendada</FormLabel>
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={!!fieldState.error}
+                />
+                <FormMessage className="text-xs text-destructive" />
               </FormItem>
             )}
           />
-        </div>
+        </div>{' '}
         <FormField
           control={form.control}
           name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Título</FormLabel>
+          render={({ field, fieldState }) => (
+            <FormItem className="space-y-2">
+              <FormLabel className="text-sm font-medium">Título</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Ligar para confirmar renovação" {...field} />
+                <div className="relative">
+                  <Input
+                    placeholder="Ex: Ligar para confirmar renovação"
+                    {...field}
+                    className={cn(
+                      'rounded-[8px] transition-colors',
+                      fieldState.error && 'border-destructive pr-10 focus-visible:ring-destructive',
+                      !fieldState.error &&
+                        fieldState.isTouched &&
+                        'border-success pr-10 focus-visible:ring-success',
+                    )}
+                  />
+                  {fieldState.error && (
+                    <AlertCircle className="absolute right-3 top-2.5 h-4 w-4 text-destructive" />
+                  )}
+                  {!fieldState.error && fieldState.isTouched && (
+                    <CheckCircle className="absolute right-3 top-2.5 h-4 w-4 text-success" />
+                  )}
+                </div>
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-xs text-destructive" />
             </FormItem>
           )}
         />
@@ -175,12 +227,12 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
           control={form.control}
           name="description"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Descrição (Opcional)</FormLabel>
+            <FormItem className="space-y-2">
+              <FormLabel className="text-sm font-medium">Descrição (Opcional)</FormLabel>
               <FormControl>
-                <Textarea className="resize-none" {...field} />
+                <Textarea className="resize-none rounded-[8px]" {...field} />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-xs text-destructive" />
             </FormItem>
           )}
         />
@@ -189,8 +241,8 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
             control={form.control}
             name="status"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
+              <FormItem className="space-y-2">
+                <FormLabel className="text-sm font-medium">Status</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
@@ -211,10 +263,19 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
           />
         )}
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="bg-muted text-muted-foreground hover:bg-muted/80 rounded-[8px] transition-all duration-200"
+          >
             Cancelar
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="bg-success text-success-foreground hover:bg-success/90 rounded-[8px] transition-all duration-200 shadow-subtle hover:shadow-elevation"
+          >
             {isLoading ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
