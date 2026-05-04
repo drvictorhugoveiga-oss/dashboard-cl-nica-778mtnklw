@@ -7,6 +7,7 @@ import Planos from './pages/Planos'
 import Profissionais from './pages/Profissionais'
 import Pacientes from './pages/Pacientes'
 import Lembretes from './pages/Lembretes'
+import NotasClinicas from './pages/NotasClinicas'
 import Configuracoes from './pages/Configuracoes'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
@@ -29,6 +30,7 @@ const App = () => (
               <Route path="/pacientes" element={<Pacientes />} />
               <Route path="/profissionais" element={<Profissionais />} />
               <Route path="/lembretes" element={<Lembretes />} />
+              <Route path="/notas-clinicas" element={<NotasClinicas />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
             </Route>
           </Route>

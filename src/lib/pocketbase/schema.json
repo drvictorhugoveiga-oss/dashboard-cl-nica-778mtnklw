@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T19:44:27.171Z",
+  "generatedAt": "2026-05-04T22:52:11.800Z",
   "collections": [
     {
       "name": "users",
@@ -426,6 +426,64 @@
         }
       ],
       "indexes": ["CREATE UNIQUE INDEX idx_system_config_key ON system_config (key)"]
+    },
+    {
+      "name": "patient_notes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (created_by = @request.auth.id || @request.auth.role = 'admin')",
+        "view": "@request.auth.id != '' && (created_by = @request.auth.id || @request.auth.role = 'admin')",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && (created_by = @request.auth.id || @request.auth.role = 'admin')",
+        "delete": "@request.auth.id != '' && (created_by = @request.auth.id || @request.auth.role = 'admin')"
+      },
+      "fields": [
+        {
+          "name": "patient_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "patients"
+        },
+        {
+          "name": "professional_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "professionals"
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created_by",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_patient_notes_patient ON patient_notes (patient_id)",
+        "CREATE INDEX idx_patient_notes_professional ON patient_notes (professional_id)"
+      ]
     }
   ]
 }

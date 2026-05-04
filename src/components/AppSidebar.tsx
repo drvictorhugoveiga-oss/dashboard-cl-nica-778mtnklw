@@ -8,6 +8,7 @@ import {
   HeartPulse,
   LogOut,
   UserRound,
+  FileText,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import {
@@ -25,6 +26,7 @@ const navigation = [
   { name: 'Pacientes', href: '/pacientes', icon: UserRound },
   { name: 'Planos', href: '/planos', icon: ShieldPlus },
   { name: 'Profissionais', href: '/profissionais', icon: Users },
+  { name: 'Notas Clínicas', href: '/notas-clinicas', icon: FileText },
   { name: 'Lembretes', href: '/lembretes', icon: Bell },
   { name: 'Configurações', href: '/configuracoes', icon: Settings },
 ]
