@@ -21,11 +21,11 @@ export function NoteDeleteDialog({ open, onOpenChange, note, onSuccess }: any) {
     setIsDeleting(true)
     try {
       await deletePatientNote(note.id)
-      toast({ title: 'Nota deletada com sucesso' })
+      toast({ title: 'Nota deletada com sucesso', duration: 3000 })
       onSuccess()
       onOpenChange(false)
     } catch (e) {
-      toast({ title: 'Erro ao deletar nota', variant: 'destructive' })
+      toast({ title: 'Erro ao deletar nota', variant: 'destructive', duration: 3000 })
     } finally {
       setIsDeleting(false)
     }
@@ -33,22 +33,29 @@ export function NoteDeleteDialog({ open, onOpenChange, note, onSuccess }: any) {
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Tem certeza que deseja deletar esta nota?</AlertDialogTitle>
-          <AlertDialogDescription>
+      <AlertDialogContent className="bg-white rounded-lg p-6 shadow-elevation border-gray-200 animate-in fade-in duration-200 ease-out">
+        <AlertDialogHeader className="mb-4">
+          <AlertDialogTitle className="text-xl font-bold text-foreground">
+            Tem certeza que deseja deletar esta nota?
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-base text-gray-600">
             Esta ação não pode ser desfeita. A nota clínica será permanentemente removida.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+        <AlertDialogFooter className="flex gap-2">
+          <AlertDialogCancel
+            disabled={isDeleting}
+            className="bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors duration-200 rounded-lg mt-0"
+          >
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault()
               handleDelete()
             }}
             disabled={isDeleting}
-            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-colors duration-200 rounded-lg shadow-subtle"
           >
             {isDeleting ? 'Deletando...' : 'Deletar'}
           </AlertDialogAction>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,9 +29,12 @@ export function PatientSelector({ patients, selectedId, onSelect }: PatientSelec
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full sm:w-[300px] justify-between bg-background"
+          className="w-full sm:w-[300px] justify-between bg-background shadow-subtle border-gray-200 rounded-lg transition-all duration-200 ease-out"
         >
-          {selectedName || 'Selecione um paciente...'}
+          <div className="flex items-center">
+            <User className="mr-2 h-4 w-4 opacity-70" />
+            {selectedName || 'Selecione um paciente...'}
+          </div>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

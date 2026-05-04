@@ -38,7 +38,10 @@ import { Button } from '@/components/ui/button'
 
 const formSchema = z.object({
   professional_id: z.string().min(1, 'Profissional é obrigatório'),
-  content: z.string().min(10, 'O conteúdo deve ter pelo menos 10 caracteres'),
+  content: z
+    .string()
+    .min(10, 'O conteúdo deve ter pelo menos 10 caracteres')
+    .max(500, 'O conteúdo não pode exceder 500 caracteres'),
 })
 
 export function NoteFormDialog({
@@ -74,10 +77,10 @@ export function NoteFormDialog({
     try {
       if (note) {
         await updatePatientNote(note.id, values)
-        toast({ title: 'Nota atualizada com sucesso' })
+        toast({ title: 'Nota atualizada com sucesso', duration: 3000 })
       } else {
         await createPatientNote({ ...values, patient_id: patientId, created_by: user.id })
-        toast({ title: 'Nota criada com sucesso' })
+        toast({ title: 'Nota criada com sucesso', duration: 3000 })
       }
       onSuccess()
       onOpenChange(false)
@@ -88,50 +91,67 @@ export function NoteFormDialog({
           form.setError(field as any, { type: 'manual', message })
         })
       } else {
-        toast({ title: 'Erro ao salvar nota', variant: 'destructive' })
+        toast({ title: 'Erro ao salvar nota', variant: 'destructive', duration: 3000 })
       }
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const contentValue = form.watch('content') || ''
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>{note ? 'Editar Nota' : 'Nova Nota Clínica'}</DialogTitle>
+      <DialogContent className="sm:max-w-[500px] bg-white rounded-lg p-6 shadow-elevation animate-in fade-in duration-200 ease-out border-gray-200">
+        <DialogHeader className="mb-2">
+          <DialogTitle className="text-xl font-bold text-foreground">
+            {note ? 'Editar Nota' : 'Nova Nota Clínica'}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <FormLabel>Paciente</FormLabel>
-              <Input value={patientName} readOnly className="bg-muted text-muted-foreground" />
+              <FormLabel className="text-sm text-gray-600">Paciente</FormLabel>
+              <Input
+                value={patientName}
+                readOnly
+                className="bg-gray-100 text-gray-600 border-gray-200 rounded-lg"
+              />
             </div>
             <FormField
               control={form.control}
               name="professional_id"
               render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel>Profissional</FormLabel>
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-sm text-gray-600">Profissional</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                     value={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger
-                        className={cn(
-                          fieldState.error
-                            ? 'border-destructive text-destructive'
-                            : fieldState.isDirty && !fieldState.invalid
-                              ? 'border-green-500 text-green-700'
-                              : '',
+                      <div className="relative">
+                        <SelectTrigger
+                          className={cn(
+                            'rounded-lg border-gray-200 pr-10',
+                            fieldState.error
+                              ? 'border-destructive text-destructive focus:ring-destructive'
+                              : fieldState.isDirty && !fieldState.invalid
+                                ? 'border-success text-success focus:ring-success'
+                                : '',
+                          )}
+                        >
+                          <SelectValue placeholder="Selecione o profissional" />
+                        </SelectTrigger>
+                        {fieldState.error && (
+                          <AlertCircle className="absolute right-8 top-2.5 h-4 w-4 text-destructive pointer-events-none" />
                         )}
-                      >
-                        <SelectValue placeholder="Selecione o profissional" />
-                      </SelectTrigger>
+                        {fieldState.isDirty && !fieldState.invalid && (
+                          <Check className="absolute right-8 top-2.5 h-4 w-4 text-success pointer-events-none" />
+                        )}
+                      </div>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="rounded-lg border-gray-200">
                       {professionals.map((p: any) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name} -{' '}
@@ -140,7 +160,7 @@ export function NoteFormDialog({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
+                  <FormMessage className="text-xs text-destructive" />
                 </FormItem>
               )}
             />
@@ -148,38 +168,52 @@ export function NoteFormDialog({
               control={form.control}
               name="content"
               render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel>Conteúdo da Nota</FormLabel>
+                <FormItem className="space-y-2">
+                  <FormLabel className="text-sm text-gray-600">Conteúdo da Nota</FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      <Textarea
-                        placeholder="Descreva as observações clínicas..."
-                        className={cn(
-                          'min-h-[150px] pr-10',
-                          fieldState.error && 'border-destructive focus-visible:ring-destructive',
-                          fieldState.isDirty &&
-                            !fieldState.invalid &&
-                            'border-green-500 focus-visible:ring-green-500',
+                    <div>
+                      <div className="relative">
+                        <Textarea
+                          placeholder="Descreva as observações clínicas..."
+                          maxLength={500}
+                          className={cn(
+                            'min-h-[200px] pr-10 rounded-lg border-gray-200 resize-none',
+                            fieldState.error && 'border-destructive focus-visible:ring-destructive',
+                            fieldState.isDirty &&
+                              !fieldState.invalid &&
+                              'border-success focus-visible:ring-success',
+                          )}
+                          {...field}
+                        />
+                        {fieldState.error && (
+                          <AlertCircle className="absolute right-3 top-3 h-5 w-5 text-destructive pointer-events-none" />
                         )}
-                        {...field}
-                      />
-                      {fieldState.error && (
-                        <AlertCircle className="absolute right-3 top-3 h-5 w-5 text-destructive" />
-                      )}
-                      {fieldState.isDirty && !fieldState.invalid && (
-                        <Check className="absolute right-3 top-3 h-5 w-5 text-green-500" />
-                      )}
+                        {fieldState.isDirty && !fieldState.invalid && (
+                          <Check className="absolute right-3 top-3 h-5 w-5 text-success pointer-events-none" />
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1 text-right">
+                        {contentValue.length} / 500
+                      </div>
                     </div>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs text-destructive" />
                 </FormItem>
               )}
             />
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <DialogFooter className="pt-4 flex gap-2 sm:justify-end">
+              <Button
+                type="button"
+                className="bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors duration-200 rounded-lg"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                className="bg-success text-success-foreground hover:bg-success/90 transition-colors duration-200 rounded-lg shadow-subtle"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? 'Salvando...' : 'Salvar'}
               </Button>
             </DialogFooter>

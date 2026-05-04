@@ -40,7 +40,7 @@ export default function NotasClinicas() {
         setPatients(pts)
         setProfessionals(profs)
       } catch (err) {
-        toast({ title: 'Erro ao carregar dados iniciais', variant: 'destructive' })
+        toast({ title: 'Erro ao carregar dados iniciais', variant: 'destructive', duration: 3000 })
       }
     }
     init()
@@ -75,9 +75,9 @@ export default function NotasClinicas() {
   const selectedPatientName = patients.find((p) => p.id === selectedPatientId)?.name || ''
 
   return (
-    <div className="container mx-auto p-4 md:p-8 max-w-6xl animate-fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Notas Clínicas</h1>
+    <div className="container mx-auto p-4 md:p-6 max-w-6xl animate-in fade-in duration-200 ease-out">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Notas Clínicas</h1>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
           <PatientSelector
             patients={patients}
@@ -90,7 +90,7 @@ export default function NotasClinicas() {
                 setSelectedNote(null)
                 setIsFormOpen(true)
               }}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-subtle transition-all duration-200 ease-out rounded-lg"
             >
               <Plus className="mr-2 h-4 w-4" /> Nova Nota
             </Button>
@@ -99,31 +99,39 @@ export default function NotasClinicas() {
       </div>
 
       {!selectedPatientId ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg bg-muted/30">
+        <div className="flex flex-col items-center justify-center py-16 text-center border border-gray-200 rounded-lg bg-white shadow-subtle transition-all duration-200 ease-out">
           <FileText className="h-16 w-16 text-muted-foreground/30 mb-4" />
-          <h3 className="text-xl font-medium text-foreground">Selecione um Paciente</h3>
-          <p className="text-muted-foreground mt-2 max-w-sm">
+          <h3 className="text-xl font-bold text-foreground">Selecione um Paciente</h3>
+          <p className="text-base text-muted-foreground mt-2 max-w-sm">
             Busque e selecione um paciente acima para visualizar ou adicionar notas clínicas.
           </p>
         </div>
       ) : isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-16 w-full animate-pulse bg-muted rounded-md" />
+            <div
+              key={i}
+              className="h-16 w-full bg-gray-100 rounded-lg border border-gray-200"
+              style={{ animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+            />
           ))}
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center justify-center p-8 border rounded-lg bg-destructive/5">
+        <div className="flex flex-col items-center justify-center p-8 border border-destructive/20 rounded-lg bg-destructive/5 shadow-subtle transition-all duration-200 ease-out">
           <AlertCircle className="h-10 w-10 text-destructive mb-4" />
           <p className="text-destructive font-medium mb-4">{error}</p>
-          <Button variant="outline" onClick={() => loadNotes(selectedPatientId)}>
+          <Button
+            variant="outline"
+            onClick={() => loadNotes(selectedPatientId)}
+            className="rounded-lg transition-colors duration-200"
+          >
             Tentar novamente
           </Button>
         </div>
       ) : notes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg bg-muted/30">
+        <div className="flex flex-col items-center justify-center py-16 text-center border border-gray-200 rounded-lg bg-white shadow-subtle transition-all duration-200 ease-out">
           <FileText className="h-12 w-12 text-muted-foreground/40 mb-4" />
-          <h3 className="text-lg font-medium text-foreground">Nenhuma nota cadastrada</h3>
+          <h3 className="text-lg font-bold text-foreground">Nenhuma nota cadastrada</h3>
           <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-md mx-auto">
             Este paciente ainda não possui nenhuma observação clínica registrada.
           </p>
@@ -132,6 +140,7 @@ export default function NotasClinicas() {
               setSelectedNote(null)
               setIsFormOpen(true)
             }}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors duration-200 ease-out shadow-subtle"
           >
             <Plus className="mr-2 h-4 w-4" /> Nova Nota
           </Button>
