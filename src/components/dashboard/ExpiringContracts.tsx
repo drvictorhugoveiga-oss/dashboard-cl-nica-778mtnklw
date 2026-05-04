@@ -1,50 +1,66 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { AlertTriangle, Clock } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
 
-const data = [{ name: 'Mariana Santos', date: '30/04', days: 26, status: 'Alerta' }]
+const data = [{ name: 'Mariana Santos', days: 26 }]
 
 export function ExpiringContracts({ isLoading }: { isLoading: boolean }) {
+  const { toast } = useToast()
+
+  const handleRenew = () => {
+    toast({
+      title: 'Renovação iniciada',
+      description: 'O processo de renovação foi iniciado com sucesso.',
+      duration: 3000,
+    })
+  }
+
   return (
     <Card
-      className="lg:col-span-1 border-destructive/20 shadow-sm transition-all duration-300 hover:shadow-md animate-fade-in-up"
-      style={{ animationDelay: '600ms' }}
+      className="lg:col-span-1 transition-all duration-200 ease-out hover:shadow-subtle animate-fade-in border-border rounded-lg"
+      style={{ animationDelay: '400ms' }}
     >
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg text-destructive flex items-center gap-2">
-          <AlertTriangle className="size-5" />
+      <CardHeader className="flex flex-row items-center justify-between pb-4 px-6 border-b border-border/50">
+        <CardTitle className="text-lg font-bold flex items-center gap-2">
           Contratos Vencendo
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4 mt-4">
+      <CardContent className="p-4">
+        <div className="space-y-4">
           {isLoading ? (
-            <Skeleton className="h-24 w-full rounded-lg" />
+            <Skeleton className="h-20 w-full rounded-lg" />
           ) : (
             data.map((contract) => (
-              <Alert
+              <div
                 key={contract.name}
-                variant="destructive"
-                className="bg-destructive/5 transition-all hover:bg-destructive/10 border-destructive/30"
+                className="flex flex-col gap-3 p-4 rounded-lg border border-destructive/20 bg-destructive/5 transition-colors hover:bg-destructive/10"
               >
-                <Clock className="size-4" />
-                <AlertTitle className="flex items-center justify-between">
-                  <span className="font-semibold text-sm">{contract.name}</span>
-                  <Badge variant="destructive" className="ml-2 font-semibold shadow-none">
-                    {contract.status}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-destructive font-bold text-sm">
+                    <AlertCircle className="size-4" />
+                    <span>{contract.name}</span>
+                  </div>
+                  <Badge
+                    variant="destructive"
+                    className="font-bold shadow-none rounded-md px-2 py-0.5"
+                  >
+                    {contract.days} dias
                   </Badge>
-                </AlertTitle>
-                <AlertDescription className="mt-3 text-xs flex flex-col gap-1.5 opacity-90">
-                  <span className="flex justify-between">
-                    Vencimento: <span className="font-medium">{contract.date}</span>
-                  </span>
-                  <span className="flex justify-between">
-                    Restam: <span className="font-bold">{contract.days} dias</span>
-                  </span>
-                </AlertDescription>
-              </Alert>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-8 text-xs font-bold w-full sm:w-auto transition-colors"
+                    onClick={handleRenew}
+                  >
+                    Renovar
+                  </Button>
+                </div>
+              </div>
             ))
           )}
           {!isLoading && data.length === 0 && (

@@ -37,10 +37,19 @@ export function AppSidebar() {
             const isActive = location.pathname === item.href
             return (
               <SidebarMenuItem key={item.name}>
-                <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  tooltip={item.name}
+                  className={
+                    isActive
+                      ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
+                      : ''
+                  }
+                >
                   <Link to={item.href} className="flex items-center gap-3">
                     <item.icon className="size-4" />
-                    <span>{item.name}</span>
+                    <span className="font-medium">{item.name}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

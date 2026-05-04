@@ -32,6 +32,7 @@ export default {
       },
       colors: {
         border: 'hsl(var(--border))',
+        success: 'hsl(var(--success))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
@@ -92,7 +93,7 @@ export default {
         height: 'height',
       },
       boxShadow: {
-        subtle: '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)',
+        subtle: '0 1px 3px rgba(0,0,0,0.1)',
         elevation: '0 4px 20px rgba(0, 0, 0, 0.05)',
       },
       transitionTimingFunction: {

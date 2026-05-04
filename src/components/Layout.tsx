@@ -47,8 +47,8 @@ export default function Layout() {
             </Button>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-8">
-          <div className="mx-auto w-full max-w-7xl">
+        <main className="flex-1 overflow-auto p-4 md:p-6 bg-background">
+          <div className="mx-auto w-full max-w-7xl flex flex-col gap-6">
             <Outlet />
           </div>
         </main>
