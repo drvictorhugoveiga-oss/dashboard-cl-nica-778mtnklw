@@ -40,9 +40,9 @@ export function PatientsByPlan({ isLoading, data = [], totalCount = 0, totalReve
           </div>
         ) : (
           <>
-            <div className="hidden md:block">
+            <div className="hidden md:block overflow-x-auto">
               <Table>
-                <TableHeader className="bg-muted/30">
+                <TableHeader className="bg-muted/50">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="font-bold text-foreground">Plano</TableHead>
                     <TableHead className="text-right font-bold text-foreground">
@@ -58,7 +58,7 @@ export function PatientsByPlan({ isLoading, data = [], totalCount = 0, totalReve
                     <TableRow
                       key={item.plan}
                       className={cn(
-                        'transition-colors duration-200 ease-out hover:bg-muted/80 cursor-default',
+                        'transition-colors duration-200 ease-out hover:bg-muted/80 hover:shadow-sm cursor-default',
                         i % 2 === 0 ? 'bg-card' : 'bg-muted/20',
                       )}
                     >

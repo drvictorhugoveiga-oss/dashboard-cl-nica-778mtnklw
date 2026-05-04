@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import type { ExpiringContract } from '@/hooks/use-dashboard-data'
 
 interface Props {
@@ -25,26 +26,47 @@ export function ExpiringContracts({ isLoading, data = [], onRenew }: Props) {
       <CardContent className="p-4">
         <div className="space-y-4">
           {isLoading ? (
-            <Skeleton className="h-20 w-full rounded-lg" />
+            <Skeleton className="h-24 w-full rounded-lg" />
           ) : (
             data.map((contract) => (
               <div
                 key={contract.id}
-                className="flex flex-col gap-3 p-4 rounded-lg border border-destructive/20 bg-destructive/5 transition-colors hover:bg-destructive/10"
+                className={cn(
+                  'flex flex-col gap-3 p-4 rounded-lg border transition-colors',
+                  contract.status === 'overdue'
+                    ? 'border-destructive/20 bg-destructive/5 hover:bg-destructive/10'
+                    : 'border-yellow-500/30 bg-yellow-500/5 hover:bg-yellow-500/10',
+                )}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-destructive font-bold text-sm">
-                    <AlertCircle className="size-4" />
-                    <span>{contract.name}</span>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-foreground font-bold text-sm">
+                      <AlertCircle
+                        className={cn(
+                          'size-4',
+                          contract.status === 'overdue' ? 'text-destructive' : 'text-yellow-600',
+                        )}
+                      />
+                      <span>{contract.name}</span>
+                    </div>
+                    <Badge
+                      variant={contract.status === 'overdue' ? 'destructive' : 'secondary'}
+                      className={cn(
+                        'font-bold shadow-none rounded-md px-2 py-0.5',
+                        contract.status === 'expiring' &&
+                          'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
+                      )}
+                    >
+                      {contract.status === 'overdue'
+                        ? 'Vencido'
+                        : `Vencendo em ${contract.days} dias`}
+                    </Badge>
                   </div>
-                  <Badge
-                    variant="destructive"
-                    className="font-bold shadow-none rounded-md px-2 py-0.5"
-                  >
-                    {contract.days} dias
-                  </Badge>
+                  <div className="text-xs text-muted-foreground font-medium">
+                    Data de Vencimento: {contract.endDate}
+                  </div>
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end mt-1">
                   <Button
                     variant="secondary"
                     size="sm"
@@ -59,7 +81,7 @@ export function ExpiringContracts({ isLoading, data = [], onRenew }: Props) {
           )}
           {!isLoading && data.length === 0 && (
             <div className="text-center text-sm text-muted-foreground py-4">
-              Nenhum contrato próximo ao vencimento.
+              Nenhum contrato vencendo
             </div>
           )}
         </div>

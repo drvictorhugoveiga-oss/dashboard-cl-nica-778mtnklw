@@ -58,7 +58,7 @@ export function UpcomingBirthdays({ isLoading, data = [] }: Props) {
                       <span className="text-xs text-muted-foreground flex items-center gap-2">
                         {person.date}
                         <span className="w-1 h-1 rounded-full bg-border" />
-                        <span className="font-regular">{person.plan}</span>
+                        <span className="font-medium">{person.plan}</span>
                       </span>
                     </div>
                   </div>
@@ -67,7 +67,7 @@ export function UpcomingBirthdays({ isLoading, data = [] }: Props) {
               ))}
           {!isLoading && data.length === 0 && (
             <div className="text-center text-sm text-muted-foreground py-6">
-              Nenhum aniversariante no mês.
+              Nenhum aniversariante este mês
             </div>
           )}
         </div>

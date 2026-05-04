@@ -16,6 +16,7 @@ export interface Birthday {
   date: string
   plan: string
   isCurrentMonth: boolean
+  day: number
 }
 
 export interface ExpiringContract {
@@ -23,6 +24,9 @@ export interface ExpiringContract {
   name: string
   days: number
   planId: string
+  endDate: string
+  status: 'overdue' | 'expiring'
+  rawDays: number
 }
 
 export interface DashboardData {
@@ -94,6 +98,7 @@ export function useDashboardData() {
         })
         .map((p) => {
           let dateStr = ''
+          let day = 0
           const parts = p.birth_date.split(' ')[0].split('-')
           if (parts.length === 3) {
             const d = new Date(
@@ -101,10 +106,12 @@ export function useDashboardData() {
               parseInt(parts[1], 10) - 1,
               parseInt(parts[2], 10),
             )
-            dateStr = `${d.getDate()} de ${d.toLocaleString('pt-BR', { month: 'long' })}`
+            day = d.getDate()
+            dateStr = `${day.toString().padStart(2, '0')} de ${d.toLocaleString('pt-BR', { month: 'long' })}`
           } else {
             const d = new Date(p.birth_date)
-            dateStr = `${d.getDate()} de ${d.toLocaleString('pt-BR', { month: 'long' })}`
+            day = d.getDate()
+            dateStr = `${day.toString().padStart(2, '0')} de ${d.toLocaleString('pt-BR', { month: 'long' })}`
           }
           return {
             id: p.id,
@@ -112,8 +119,10 @@ export function useDashboardData() {
             date: dateStr,
             plan: p.expand?.plan_id?.name || 'Sem plano',
             isCurrentMonth: true,
+            day,
           }
         })
+        .sort((a, b) => a.day - b.day)
 
       const today = new Date()
       today.setHours(0, 0, 0, 0)
@@ -129,7 +138,7 @@ export function useDashboardData() {
             parseInt(endParts[1]) - 1,
             parseInt(endParts[2]),
           )
-          return end >= today && end <= in7Days
+          return end <= in7Days
         })
         .map((p) => {
           const endParts = p.contract_end.split(' ')[0].split('-')
@@ -138,16 +147,19 @@ export function useDashboardData() {
             parseInt(endParts[1]) - 1,
             parseInt(endParts[2]),
           )
-          const diffTime = Math.abs(end.getTime() - today.getTime())
+          const diffTime = end.getTime() - today.getTime()
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
           return {
             id: p.id,
             name: p.name,
-            days: diffDays,
+            days: Math.abs(diffDays),
             planId: p.plan_id,
+            endDate: `${end.getDate().toString().padStart(2, '0')}/${(end.getMonth() + 1).toString().padStart(2, '0')}/${end.getFullYear()}`,
+            status: diffDays < 0 ? ('overdue' as const) : ('expiring' as const),
+            rawDays: diffDays,
           }
         })
-        .sort((a, b) => a.days - b.days)
+        .sort((a, b) => a.rawDays - b.rawDays)
 
       setData({
         grossRevenue,
@@ -161,10 +173,15 @@ export function useDashboardData() {
       })
     } catch (err) {
       console.error(err)
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Erro ao carregar dados do dashboard',
+      })
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => {
     fetchData()
