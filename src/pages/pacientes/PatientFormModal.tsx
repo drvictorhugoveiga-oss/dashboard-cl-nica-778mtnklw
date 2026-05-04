@@ -24,6 +24,9 @@ import { Button } from '@/components/ui/button'
 import { Patient, createPatient, updatePatient, PatientFormData } from '@/services/patients'
 import { Plan } from '@/services/plans'
 import { useToast } from '@/hooks/use-toast'
+import { DatePicker } from '@/components/ui/date-picker'
+import { Check, AlertCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const formSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -51,6 +54,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
   const { toast } = useToast()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: {
       name: '',
       email: '',
@@ -101,6 +105,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
           form.setValue(
             'contract_end',
             format(addMonths(parseISO(start), p.duration_months), 'yyyy-MM-dd'),
+            { shouldValidate: true },
           )
         } catch {
           /* intentionally ignored */
@@ -114,37 +119,65 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
       const data: PatientFormData = { ...values, contract_end: values.contract_end || undefined }
       if (patient) {
         await updatePatient(patient.id, data)
-        toast({ title: 'Paciente atualizado com sucesso' })
+        toast({ title: 'Paciente atualizado com sucesso', duration: 3000 })
       } else {
         await createPatient(data)
-        toast({ title: 'Paciente criado com sucesso' })
+        toast({ title: 'Paciente criado com sucesso', duration: 3000 })
       }
       onSuccess()
       onClose()
     } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' })
+      toast({ title: 'Erro', description: err.message, variant: 'destructive', duration: 3000 })
     }
+  }
+
+  const renderFeedbackIcon = (fieldName: keyof z.infer<typeof formSchema>) => {
+    const isDirty = form.formState.dirtyFields[fieldName] || form.formState.isSubmitted
+    const hasError = !!form.formState.errors[fieldName]
+
+    if (hasError)
+      return (
+        <AlertCircle className="absolute right-3 top-2.5 h-4 w-4 text-destructive pointer-events-none" />
+      )
+    if (isDirty && !hasError)
+      return <Check className="absolute right-3 top-2.5 h-4 w-4 text-success pointer-events-none" />
+    return null
+  }
+
+  const getInputClass = (fieldName: keyof z.infer<typeof formSchema>) => {
+    const isDirty = form.formState.dirtyFields[fieldName] || form.formState.isSubmitted
+    const hasError = !!form.formState.errors[fieldName]
+    return cn(
+      'rounded-[8px]',
+      hasError && 'border-destructive focus-visible:ring-destructive pr-10',
+      isDirty && !hasError && 'border-success focus-visible:ring-success pr-10',
+    )
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[8px] duration-200">
         <DialogHeader>
-          <DialogTitle>{patient ? 'Editar Paciente' : 'Novo Paciente'}</DialogTitle>
+          <DialogTitle className="text-xl font-bold">
+            {patient ? 'Editar Paciente' : 'Novo Paciente'}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome</FormLabel>
+                    <FormLabel className="text-sm font-medium">Nome</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <div className="relative">
+                        <Input {...field} className={getInputClass('name')} />
+                        {renderFeedbackIcon('name')}
+                      </div>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs text-destructive" />
                   </FormItem>
                 )}
               />
@@ -153,11 +186,14 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-sm font-medium">Email</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} />
+                      <div className="relative">
+                        <Input type="email" {...field} className={getInputClass('email')} />
+                        {renderFeedbackIcon('email')}
+                      </div>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs text-destructive" />
                   </FormItem>
                 )}
               />
@@ -166,11 +202,14 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Telefone</FormLabel>
+                    <FormLabel className="text-sm font-medium">Telefone</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <div className="relative">
+                        <Input {...field} className={getInputClass('phone')} />
+                        {renderFeedbackIcon('phone')}
+                      </div>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs text-destructive" />
                   </FormItem>
                 )}
               />
@@ -179,11 +218,15 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 name="birth_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Nascimento</FormLabel>
+                    <FormLabel className="text-sm font-medium">Data de Nascimento</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker
+                        value={field.value ? parseISO(field.value) : undefined}
+                        onChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                        error={!!form.formState.errors.birth_date}
+                      />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs text-destructive" />
                   </FormItem>
                 )}
               />
@@ -192,10 +235,10 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 name="plan_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Plano</FormLabel>
+                    <FormLabel className="text-sm font-medium">Plano</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={getInputClass('plan_id')}>
                           <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                       </FormControl>
@@ -207,7 +250,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage className="text-xs text-destructive" />
                   </FormItem>
                 )}
               />
@@ -216,10 +259,10 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel className="text-sm font-medium">Status</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={getInputClass('status')}>
                           <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                       </FormControl>
@@ -229,7 +272,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                         <SelectItem value="paused">Pausado</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage className="text-xs text-destructive" />
                   </FormItem>
                 )}
               />
@@ -238,11 +281,15 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 name="contract_start"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Início do Contrato</FormLabel>
+                    <FormLabel className="text-sm font-medium">Início do Contrato</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker
+                        value={field.value ? parseISO(field.value) : undefined}
+                        onChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                        error={!!form.formState.errors.contract_start}
+                      />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs text-destructive" />
                   </FormItem>
                 )}
               />
@@ -251,17 +298,33 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 name="contract_end"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fim do Contrato (Automático)</FormLabel>
+                    <FormLabel className="text-sm font-medium text-muted-foreground">
+                      Fim do Contrato (Auto)
+                    </FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} disabled />
+                      <div className="relative">
+                        <Input
+                          value={field.value ? format(parseISO(field.value), 'dd/MM/yyyy') : ''}
+                          disabled
+                          className="bg-muted/50 rounded-[8px]"
+                        />
+                      </div>
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs text-destructive" />
                   </FormItem>
                 )}
               />
             </div>
-            <div className="flex justify-end pt-4">
-              <Button type="submit">Salvar</Button>
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <Button type="button" variant="secondary" onClick={onClose} className="rounded-[8px]">
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="bg-success hover:bg-success/90 text-success-foreground rounded-[8px]"
+              >
+                Salvar
+              </Button>
             </div>
           </form>
         </Form>

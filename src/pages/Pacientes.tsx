@@ -87,9 +87,14 @@ export default function Pacientes() {
     if (!patientToDelete) return
     try {
       await deletePatient(patientToDelete.id)
-      toast({ title: 'Paciente deletado com sucesso' })
+      toast({ title: 'Paciente deletado com sucesso', duration: 3000 })
     } catch (err: any) {
-      toast({ title: 'Erro ao deletar', description: err.message, variant: 'destructive' })
+      toast({
+        title: 'Erro ao deletar',
+        description: err.message,
+        variant: 'destructive',
+        duration: 3000,
+      })
     } finally {
       setPatientToDelete(null)
     }
@@ -98,8 +103,9 @@ export default function Pacientes() {
   return (
     <div className="p-6 max-w-[1400px] mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Pacientes</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Pacientes</h1>
         <Button
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={() => {
             setSelectedPatient(null)
             setIsFormOpen(true)
@@ -122,19 +128,19 @@ export default function Pacientes() {
         </Alert>
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="relative flex-1 w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por nome..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 w-full"
+                className="pl-9 w-full rounded-[8px] border-border"
               />
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-4 w-full md:w-auto">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full md:w-[160px] rounded-[8px] border-border">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -145,7 +151,7 @@ export default function Pacientes() {
                 </SelectContent>
               </Select>
               <Select value={planFilter} onValueChange={setPlanFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full md:w-[200px] rounded-[8px] border-border">
                   <SelectValue placeholder="Todos Planos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -198,7 +204,7 @@ export default function Pacientes() {
         open={!!patientToDelete}
         onOpenChange={(open) => !open && setPatientToDelete(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-[8px]">
           <AlertDialogHeader>
             <AlertDialogTitle>Deletar Paciente</AlertDialogTitle>
             <AlertDialogDescription>

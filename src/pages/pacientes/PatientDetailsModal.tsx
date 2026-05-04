@@ -16,10 +16,29 @@ type Props = {
   patient: Patient | null
 }
 
-const statusMap = {
-  active: { label: 'Ativo', variant: 'default' as const },
-  inactive: { label: 'Inativo', variant: 'destructive' as const },
-  paused: { label: 'Pausado', variant: 'secondary' as const },
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'active':
+      return (
+        <Badge className="bg-success text-success-foreground border-success hover:bg-success/90">
+          Ativo
+        </Badge>
+      )
+    case 'inactive':
+      return (
+        <Badge className="bg-muted text-muted-foreground border-muted-foreground/20 hover:bg-muted">
+          Inativo
+        </Badge>
+      )
+    case 'paused':
+      return (
+        <Badge className="bg-yellow-500 text-white border-yellow-600 hover:bg-yellow-600">
+          Pausado
+        </Badge>
+      )
+    default:
+      return <Badge>Desconhecido</Badge>
+  }
 }
 
 export function PatientDetailsModal({ isOpen, onClose, patient }: Props) {
@@ -33,13 +52,11 @@ export function PatientDetailsModal({ isOpen, onClose, patient }: Props) {
     }
   }
 
-  const statusInfo = statusMap[patient.status]
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-[8px] duration-200">
         <DialogHeader>
-          <DialogTitle>Detalhes do Paciente</DialogTitle>
+          <DialogTitle className="text-xl font-bold">Detalhes do Paciente</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4 text-sm">
           <div className="grid grid-cols-3 gap-y-3 gap-x-2">
@@ -86,13 +103,11 @@ export function PatientDetailsModal({ isOpen, onClose, patient }: Props) {
             </span>
 
             <span className="font-semibold text-muted-foreground">Status:</span>
-            <span className="col-span-2">
-              <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-            </span>
+            <span className="col-span-2">{getStatusBadge(patient.status)}</span>
           </div>
         </div>
-        <DialogFooter>
-          <Button onClick={onClose} variant="secondary">
+        <DialogFooter className="border-t border-border pt-4">
+          <Button onClick={onClose} variant="secondary" className="rounded-[8px]">
             Fechar
           </Button>
         </DialogFooter>
