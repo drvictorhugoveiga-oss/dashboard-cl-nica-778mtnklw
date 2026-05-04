@@ -9,6 +9,7 @@ import {
   LogOut,
   UserRound,
   FileText,
+  PieChart,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import {
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Profissionais', href: '/profissionais', icon: Users },
   { name: 'Notas Clínicas', href: '/notas-clinicas', icon: FileText },
   { name: 'Lembretes', href: '/lembretes', icon: Bell },
+  { name: 'Relatórios Financeiros', href: '/relatorios-financeiros', icon: PieChart },
   { name: 'Configurações', href: '/configuracoes', icon: Settings },
 ]
 
@@ -36,7 +38,8 @@ export function AppSidebar() {
   const { user, signOut } = useAuth()
 
   const filteredNav = navigation.filter(
-    (item) => item.name !== 'Configurações' || user?.role === 'admin',
+    (item) =>
+      !['Configurações', 'Relatórios Financeiros'].includes(item.name) || user?.role === 'admin',
   )
 
   return (

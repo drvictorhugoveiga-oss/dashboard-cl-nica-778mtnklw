@@ -9,6 +9,7 @@ import Pacientes from './pages/Pacientes'
 import Lembretes from './pages/Lembretes'
 import NotasClinicas from './pages/NotasClinicas'
 import Configuracoes from './pages/Configuracoes'
+import { RelatoriosFinanceiros } from './pages/relatorios-financeiros/RelatoriosFinanceiros'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/lembretes" element={<Lembretes />} />
               <Route path="/notas-clinicas" element={<NotasClinicas />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
+              <Route path="/relatorios-financeiros" element={<RelatoriosFinanceiros />} />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />
