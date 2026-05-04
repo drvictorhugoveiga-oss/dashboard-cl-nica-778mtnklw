@@ -1,6 +1,15 @@
-// @deps date-fns@4.1.0
 cronAdd('enviar-lembretes-automaticos', '0 11 * * *', () => {
-  const { format, addDays } = require('date-fns')
+  function formatYMD(d) {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+  function addDays(d, days) {
+    const result = new Date(d)
+    result.setDate(result.getDate() + days)
+    return result
+  }
 
   let remindersCreated = 0
   let statusUpdated = 0
@@ -20,9 +29,9 @@ cronAdd('enviar-lembretes-automaticos', '0 11 * * *', () => {
   // America/Sao_Paulo (BRT) is UTC-3
   const nowBrt = new Date(nowUtc.getTime() - 3 * 3600 * 1000)
 
-  const todayStr = format(nowBrt, 'yyyy-MM-dd')
+  const todayStr = formatYMD(nowBrt)
   const in7Days = addDays(nowBrt, 7)
-  const in7DaysStr = format(in7Days, 'yyyy-MM-dd')
+  const in7DaysStr = formatYMD(in7Days)
 
   let patients
   try {
