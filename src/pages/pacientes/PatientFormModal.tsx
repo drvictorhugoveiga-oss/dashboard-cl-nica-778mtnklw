@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils'
 
 const formSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
-  email: z.string().email('E-mail inválido').min(1, 'E-mail é obrigatório'),
+  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   phone: z.string().min(1, 'Telefone é obrigatório'),
   birth_date: z
     .string()
@@ -116,7 +116,11 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const data: PatientFormData = { ...values, contract_end: values.contract_end || undefined }
+      const data: PatientFormData = {
+        ...values,
+        email: values.email || undefined,
+        contract_end: values.contract_end || undefined,
+      }
       if (patient) {
         await updatePatient(patient.id, data)
         toast({ title: 'Paciente atualizado com sucesso', duration: 3000 })
@@ -186,7 +190,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">Email</FormLabel>
+                    <FormLabel className="text-sm font-medium">Email (Opcional)</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input type="email" {...field} className={getInputClass('email')} />

@@ -21,7 +21,7 @@ export interface Patient {
 
 export type PatientFormData = {
   name: string
-  email: string
+  email?: string
   phone: string
   birth_date: string
   plan_id: string
