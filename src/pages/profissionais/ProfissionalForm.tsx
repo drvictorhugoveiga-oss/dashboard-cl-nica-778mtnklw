@@ -2,7 +2,13 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import {
   Form,
   FormControl,
@@ -24,7 +30,7 @@ import { createProfessional, updateProfessional } from '@/services/professionals
 import { useToast } from '@/hooks/use-toast'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import { Switch } from '@/components/ui/switch'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const formSchema = z.object({
@@ -35,7 +41,7 @@ const formSchema = z.object({
       required_error: 'Selecione uma especialidade',
     },
   ),
-  email: z.string().email('Email inválido').min(1, 'Email é obrigatório'),
+  email: z.string().email('Formato de email inválido').min(1, 'Email é obrigatório'),
   phone: z.string().min(1, 'Telefone é obrigatório'),
   status: z.enum(['active', 'inactive']),
 })
@@ -60,6 +66,7 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
       phone: '',
       status: 'active',
     },
+    mode: 'onTouched',
   })
 
   useEffect(() => {
@@ -82,10 +89,18 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
     try {
       if (item) {
         await updateProfessional(item.id, values)
-        toast({ title: 'Profissional atualizado com sucesso' })
+        toast({
+          title: 'Profissional atualizado com sucesso',
+          className: 'bg-success text-success-foreground',
+          duration: 3000,
+        })
       } else {
         await createProfessional(values)
-        toast({ title: 'Profissional criado com sucesso' })
+        toast({
+          title: 'Profissional criado com sucesso',
+          className: 'bg-success text-success-foreground',
+          duration: 3000,
+        })
       }
       onOpenChange(false)
     } catch (err: any) {
@@ -93,40 +108,57 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
       Object.keys(fieldErrors).forEach((key) =>
         form.setError(key as any, { message: fieldErrors[key] }),
       )
-      toast({ title: 'Erro ao salvar profissional', variant: 'destructive' })
+      toast({ title: 'Erro ao salvar profissional', variant: 'destructive', duration: 3000 })
     }
   }
 
-  const renderInput = (field: any, error: boolean, placeholder: string, type = 'text') => (
-    <div className="relative">
-      <Input
-        type={type}
-        placeholder={placeholder}
-        {...field}
-        className={cn(error && 'border-destructive focus-visible:ring-destructive pr-10')}
-      />
-      {error && <AlertCircle className="absolute right-3 top-2.5 size-4 text-destructive" />}
-    </div>
-  )
+  const renderInput = (field: any, fieldState: any, placeholder: string, type = 'text') => {
+    const hasError = !!fieldState.error
+    const isSuccess = fieldState.isDirty && !hasError && field.value
+
+    return (
+      <div className="relative">
+        <Input
+          type={type}
+          placeholder={placeholder}
+          {...field}
+          className={cn(
+            'h-10 transition-colors',
+            hasError && 'border-destructive focus-visible:ring-destructive pr-10',
+            isSuccess && 'border-success focus-visible:ring-success pr-10',
+          )}
+        />
+        {hasError && (
+          <AlertCircle className="absolute right-3 top-3 size-4 text-destructive animate-fade-in" />
+        )}
+        {isSuccess && (
+          <Check className="absolute right-3 top-3 size-4 text-success animate-fade-in" />
+        )}
+      </div>
+    )
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] rounded-lg p-6 data-[state=open]:animate-fade-in duration-200">
         <DialogHeader>
-          <DialogTitle>{item ? 'Editar Profissional' : 'Novo Profissional'}</DialogTitle>
+          <DialogTitle className="text-xl font-bold">
+            {item ? 'Editar Profissional' : 'Novo Profissional'}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Formulário para adicionar ou editar profissional
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-2">
             <FormField
               control={form.control}
               name="name"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    {renderInput(field, !!fieldState.error, 'Nome completo')}
-                  </FormControl>
-                  <FormMessage />
+                  <FormLabel className="text-sm">Nome</FormLabel>
+                  <FormControl>{renderInput(field, fieldState, 'Nome completo')}</FormControl>
+                  <FormMessage className="text-xs text-destructive" />
                 </FormItem>
               )}
             />
@@ -135,11 +167,12 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
               name="specialty"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Especialidade</FormLabel>
+                  <FormLabel className="text-sm">Especialidade</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger
                         className={cn(
+                          'h-10',
                           fieldState.error && 'border-destructive focus-visible:ring-destructive',
                         )}
                       >
@@ -155,7 +188,7 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
                       <SelectItem value="médico">Médico</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormMessage />
+                  <FormMessage className="text-xs text-destructive" />
                 </FormItem>
               )}
             />
@@ -164,11 +197,11 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
               name="email"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className="text-sm">Email</FormLabel>
                   <FormControl>
-                    {renderInput(field, !!fieldState.error, 'email@exemplo.com', 'email')}
+                    {renderInput(field, fieldState, 'email@exemplo.com', 'email')}
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs text-destructive" />
                 </FormItem>
               )}
             />
@@ -177,11 +210,9 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
               name="phone"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Telefone</FormLabel>
-                  <FormControl>
-                    {renderInput(field, !!fieldState.error, '(11) 99999-9999')}
-                  </FormControl>
-                  <FormMessage />
+                  <FormLabel className="text-sm">Telefone</FormLabel>
+                  <FormControl>{renderInput(field, fieldState, '(11) 99999-9999')}</FormControl>
+                  <FormMessage className="text-xs text-destructive" />
                 </FormItem>
               )}
             />
@@ -189,8 +220,8 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
               control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <FormLabel className="cursor-pointer">Profissional Ativo</FormLabel>
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm h-14">
+                  <FormLabel className="cursor-pointer text-sm">Profissional Ativo</FormLabel>
                   <FormControl>
                     <Switch
                       checked={field.value === 'active'}
@@ -201,10 +232,20 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
               )}
             />
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                className="text-muted-foreground"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">Salvar</Button>
+              <Button
+                type="submit"
+                className="bg-success hover:bg-success/90 text-success-foreground"
+              >
+                Salvar
+              </Button>
             </div>
           </form>
         </Form>

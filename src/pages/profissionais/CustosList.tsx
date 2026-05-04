@@ -22,14 +22,18 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Button } from '@/components/ui/button'
-import { Edit2 } from 'lucide-react'
+import { Edit2, User } from 'lucide-react'
 import { CustoForm } from './CustoForm'
 
-export function CustosList() {
+interface Props {
+  selectedProfId: string
+  onSelectProf: (id: string) => void
+}
+
+export function CustosList({ selectedProfId, onSelectProf }: Props) {
   const [profissionais, setProfissionais] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
   const [costs, setCosts] = useState<any[]>([])
-  const [selectedProfId, setSelectedProfId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [loadingCosts, setLoadingCosts] = useState(false)
 
@@ -83,20 +87,24 @@ export function CustosList() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
   }
 
-  if (loading) return <Skeleton className="h-[200px] w-full rounded-xl" />
+  if (loading)
+    return <Skeleton className="h-[200px] w-full rounded-xl animate-pulse duration-1500" />
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <div className="max-w-md">
-        <label className="text-sm font-medium mb-2 block">Selecione o Profissional</label>
-        <Select value={selectedProfId} onValueChange={setSelectedProfId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Escolha um profissional..." />
+    <div className="space-y-4 animate-fade-in-up delay-75">
+      <div className="w-full">
+        <Select value={selectedProfId} onValueChange={onSelectProf}>
+          <SelectTrigger className="w-full bg-white h-10">
+            <div className="flex items-center gap-2">
+              <User className="size-4 text-muted-foreground" />
+              <SelectValue placeholder="Escolha um profissional..." />
+            </div>
           </SelectTrigger>
           <SelectContent>
             {profissionais.map((p) => (
               <SelectItem key={p.id} value={p.id}>
-                {p.name}
+                {p.name} -{' '}
+                <span className="text-muted-foreground capitalize text-xs">{p.specialty}</span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -104,7 +112,7 @@ export function CustosList() {
       </div>
 
       {!selectedProfId ? (
-        <Card className="bg-muted/30 border-dashed">
+        <Card className="bg-muted/30 border-dashed shadow-none">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
             <p>Selecione um profissional acima para visualizar e editar seus custos por plano.</p>
           </CardContent>
@@ -112,35 +120,36 @@ export function CustosList() {
       ) : loadingCosts ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            <Skeleton key={i} className="h-16 w-full rounded-lg animate-pulse duration-1500" />
           ))}
         </div>
       ) : isMobile ? (
         <div className="grid grid-cols-1 gap-4">
           {mergedData.map(({ plan, costRecord }) => (
-            <Card key={plan.id} className="p-4">
+            <Card key={plan.id} className="p-4 shadow-subtle border border-border">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-semibold">{plan.name}</h3>
-                  <p className="text-2xl font-bold mt-2 text-primary">
+                  <h3 className="font-semibold text-foreground">{plan.name}</h3>
+                  <p className="text-xl font-bold mt-1 text-primary">
                     {costRecord ? formatCurrency(costRecord.cost_per_month) : 'R$ 0,00'}
                   </p>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="text-primary hover:text-primary/80 hover:bg-primary/10"
                   onClick={() => setEditItem({ plan, cost: costRecord })}
                 >
-                  <Edit2 className="size-4 text-muted-foreground" />
+                  <Edit2 className="size-4" />
                 </Button>
               </div>
             </Card>
           ))}
         </div>
       ) : (
-        <div className="rounded-md border bg-card overflow-hidden">
+        <div className="rounded-lg border bg-card overflow-hidden shadow-subtle">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-slate-50/80">
               <TableRow>
                 <TableHead>Plano</TableHead>
                 <TableHead>Custo Mensal</TableHead>
@@ -149,19 +158,23 @@ export function CustosList() {
             </TableHeader>
             <TableBody>
               {mergedData.map(({ plan, costRecord }) => (
-                <TableRow key={plan.id}>
-                  <TableCell className="font-medium">{plan.name}</TableCell>
-                  <TableCell className="font-semibold">
+                <TableRow
+                  key={plan.id}
+                  className="even:bg-slate-50/40 hover:bg-slate-50 transition-colors"
+                >
+                  <TableCell className="font-medium whitespace-nowrap">{plan.name}</TableCell>
+                  <TableCell className="font-semibold text-primary">
                     {costRecord ? (
                       formatCurrency(costRecord.cost_per_month)
                     ) : (
-                      <span className="text-muted-foreground">Não definido</span>
+                      <span className="text-muted-foreground font-normal">Não definido</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="text-primary hover:text-primary/80 hover:bg-primary/10 h-8"
                       onClick={() => setEditItem({ plan, cost: costRecord })}
                     >
                       <Edit2 className="size-4 mr-2" />
