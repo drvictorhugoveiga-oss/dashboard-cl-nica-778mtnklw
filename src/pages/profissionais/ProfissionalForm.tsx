@@ -29,9 +29,12 @@ import { cn } from '@/lib/utils'
 
 const formSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
-  specialty: z.enum(['nutrição', 'psicologia', 'fisioterapia', 'fonoaudiologia', 'enfermagem'], {
-    required_error: 'Selecione uma especialidade',
-  }),
+  specialty: z.enum(
+    ['nutrição', 'psicologia', 'fisioterapia', 'fonoaudiologia', 'enfermagem', 'médico'],
+    {
+      required_error: 'Selecione uma especialidade',
+    },
+  ),
   email: z.string().email('Email inválido').min(1, 'Email é obrigatório'),
   phone: z.string().min(1, 'Telefone é obrigatório'),
   status: z.enum(['active', 'inactive']),
@@ -149,6 +152,7 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
                       <SelectItem value="fisioterapia">Fisioterapia</SelectItem>
                       <SelectItem value="fonoaudiologia">Fonoaudiologia</SelectItem>
                       <SelectItem value="enfermagem">Enfermagem</SelectItem>
+                      <SelectItem value="médico">Médico</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

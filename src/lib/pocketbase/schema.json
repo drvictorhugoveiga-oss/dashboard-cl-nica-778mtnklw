@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T18:54:37.511Z",
+  "generatedAt": "2026-05-04T18:57:07.747Z",
   "collections": [
     {
       "name": "users",
@@ -125,7 +125,14 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["nutrição", "psicologia", "fisioterapia", "fonoaudiologia", "enfermagem"]
+          "selectValues": [
+            "nutrição",
+            "psicologia",
+            "fisioterapia",
+            "fonoaudiologia",
+            "enfermagem",
+            "médico"
+          ]
         },
         {
           "name": "email",

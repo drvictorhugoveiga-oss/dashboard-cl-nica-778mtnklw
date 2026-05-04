@@ -77,6 +77,7 @@ export function ProfissionaisList() {
             <SelectItem value="fisioterapia">Fisioterapia</SelectItem>
             <SelectItem value="fonoaudiologia">Fonoaudiologia</SelectItem>
             <SelectItem value="enfermagem">Enfermagem</SelectItem>
+            <SelectItem value="médico">Médico</SelectItem>
           </SelectContent>
         </Select>
         <Button onClick={handleNew} className="w-full sm:w-auto">
