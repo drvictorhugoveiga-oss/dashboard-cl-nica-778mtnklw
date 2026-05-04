@@ -32,22 +32,25 @@ export default {
       },
       colors: {
         border: 'hsl(var(--border))',
-        success: 'hsl(var(--success))',
+        success: {
+          DEFAULT: 'hsl(142, 71%, 45%)',
+          foreground: 'hsl(0, 0%, 100%)',
+        },
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: 'hsl(152, 68%, 40%)',
+          foreground: 'hsl(0, 0%, 100%)',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
+          DEFAULT: 'hsl(0, 84%, 60%)',
+          foreground: 'hsl(0, 0%, 100%)',
         },
         muted: {
           DEFAULT: 'hsl(var(--muted))',

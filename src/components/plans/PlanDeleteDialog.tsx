@@ -27,11 +27,20 @@ export function PlanDeleteDialog({ plan, onClose, onSuccess }: Props) {
     setIsDeleting(true)
     try {
       await deletePlan(plan.id)
-      toast({ title: 'Plano deletado com sucesso' })
+      toast({
+        title: 'Plano deletado com sucesso',
+        duration: 3000,
+        className: 'data-[state=open]:duration-300',
+      })
       onSuccess()
       onClose()
     } catch (err) {
-      toast({ title: 'Erro ao deletar plano', variant: 'destructive' })
+      toast({
+        title: 'Erro ao deletar plano',
+        variant: 'destructive',
+        duration: 3000,
+        className: 'data-[state=open]:duration-300',
+      })
     } finally {
       setIsDeleting(false)
     }
@@ -39,23 +48,31 @@ export function PlanDeleteDialog({ plan, onClose, onSuccess }: Props) {
 
   return (
     <AlertDialog open={!!plan} onOpenChange={(open) => !open && onClose()}>
-      <AlertDialogContent>
+      <AlertDialogContent className="rounded-[8px] animate-in fade-in duration-200 shadow-elevation border-border/50">
         <AlertDialogHeader>
-          <AlertDialogTitle>Tem certeza que deseja deletar este plano?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta ação não pode ser desfeita. O plano "{plan?.name}" será removido permanentemente da
-            base de dados.
+          <AlertDialogTitle className="font-bold text-[20px]">
+            Tem certeza que deseja deletar este plano?
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-sm font-regular">
+            Esta ação não pode ser desfeita. O plano{' '}
+            <strong className="font-bold text-foreground">"{plan?.name}"</strong> será removido
+            permanentemente da base de dados.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+        <AlertDialogFooter className="gap-2 sm:space-x-0">
+          <AlertDialogCancel
+            disabled={isDeleting}
+            className="rounded-[8px] bg-muted text-muted-foreground hover:bg-muted/80 border-transparent transition-colors duration-200 mt-0 sm:mt-0"
+          >
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault()
               handleDelete()
             }}
             disabled={isDeleting}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            className="rounded-[8px] bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all duration-200 shadow-sm"
           >
             {isDeleting ? 'Deletando...' : 'Deletar'}
           </AlertDialogAction>
