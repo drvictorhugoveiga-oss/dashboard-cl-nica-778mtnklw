@@ -1,4 +1,5 @@
 import pb from '@/lib/pocketbase/client'
+import { logFrontendAudit } from './audit'
 
 export interface ProfessionalCost {
   id: string
@@ -19,10 +20,24 @@ export const getProfessionalCosts = (professionalId?: string) => {
   })
 }
 
-export const createProfessionalCost = (data: any) => {
-  return pb.collection('professional_costs').create(data)
+export const createProfessionalCost = async (data: any) => {
+  try {
+    const res = await pb.collection('professional_costs').create(data)
+    await logFrontendAudit('create', 'professional_costs', res.id, 'success')
+    return res
+  } catch (e) {
+    await logFrontendAudit('create', 'professional_costs', '', 'denied')
+    throw e
+  }
 }
 
-export const updateProfessionalCost = (id: string, data: any) => {
-  return pb.collection('professional_costs').update(id, data)
+export const updateProfessionalCost = async (id: string, data: any) => {
+  try {
+    const res = await pb.collection('professional_costs').update(id, data)
+    await logFrontendAudit('update', 'professional_costs', id, 'success')
+    return res
+  } catch (e) {
+    await logFrontendAudit('update', 'professional_costs', id, 'denied')
+    throw e
+  }
 }

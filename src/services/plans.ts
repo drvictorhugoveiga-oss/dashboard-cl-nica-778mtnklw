@@ -1,4 +1,5 @@
 import pb from '@/lib/pocketbase/client'
+import { logFrontendAudit } from './audit'
 
 export interface Plan {
   id: string
@@ -23,8 +24,34 @@ export const getPlans = () => {
   })
 }
 
-export const createPlan = (data: any) => pb.collection('plans').create(data)
+export const createPlan = async (data: any) => {
+  try {
+    const res = await pb.collection('plans').create(data)
+    await logFrontendAudit('create', 'plans', res.id, 'success')
+    return res
+  } catch (e) {
+    await logFrontendAudit('create', 'plans', '', 'denied')
+    throw e
+  }
+}
 
-export const updatePlan = (id: string, data: any) => pb.collection('plans').update(id, data)
+export const updatePlan = async (id: string, data: any) => {
+  try {
+    const res = await pb.collection('plans').update(id, data)
+    await logFrontendAudit('update', 'plans', id, 'success')
+    return res
+  } catch (e) {
+    await logFrontendAudit('update', 'plans', id, 'denied')
+    throw e
+  }
+}
 
-export const deletePlan = (id: string) => pb.collection('plans').delete(id)
+export const deletePlan = async (id: string) => {
+  try {
+    await pb.collection('plans').delete(id)
+    await logFrontendAudit('delete', 'plans', id, 'success')
+  } catch (e) {
+    await logFrontendAudit('delete', 'plans', id, 'denied')
+    throw e
+  }
+}

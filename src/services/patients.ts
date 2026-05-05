@@ -1,5 +1,6 @@
 import pb from '@/lib/pocketbase/client'
 import { Plan } from './plans'
+import { logFrontendAudit } from './audit'
 
 export interface Patient {
   id: string
@@ -37,10 +38,34 @@ export const getPatients = async () => {
   })
 }
 
-export const createPatient = (data: PatientFormData) =>
-  pb.collection('patients').create<Patient>(data)
+export const createPatient = async (data: PatientFormData) => {
+  try {
+    const res = await pb.collection('patients').create<Patient>(data)
+    await logFrontendAudit('create', 'patients', res.id, 'success')
+    return res
+  } catch (e) {
+    await logFrontendAudit('create', 'patients', '', 'denied')
+    throw e
+  }
+}
 
-export const updatePatient = (id: string, data: Partial<PatientFormData>) =>
-  pb.collection('patients').update<Patient>(id, data)
+export const updatePatient = async (id: string, data: Partial<PatientFormData>) => {
+  try {
+    const res = await pb.collection('patients').update<Patient>(id, data)
+    await logFrontendAudit('update', 'patients', id, 'success')
+    return res
+  } catch (e) {
+    await logFrontendAudit('update', 'patients', id, 'denied')
+    throw e
+  }
+}
 
-export const deletePatient = (id: string) => pb.collection('patients').delete(id)
+export const deletePatient = async (id: string) => {
+  try {
+    await pb.collection('patients').delete(id)
+    await logFrontendAudit('delete', 'patients', id, 'success')
+  } catch (e) {
+    await logFrontendAudit('delete', 'patients', id, 'denied')
+    throw e
+  }
+}

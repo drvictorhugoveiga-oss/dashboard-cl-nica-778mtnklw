@@ -35,12 +35,23 @@ const navigation = [
 
 export function AppSidebar() {
   const location = useLocation()
-  const { user, signOut } = useAuth()
+  const { user, signOut, hasPermission } = useAuth()
 
-  const filteredNav = navigation.filter(
-    (item) =>
-      !['Configurações', 'Relatórios Financeiros'].includes(item.name) || user?.role === 'admin',
-  )
+  const permissionsMap: Record<string, string> = {
+    Dashboard: 'view_dashboard',
+    Pacientes: 'manage_patients',
+    Planos: 'edit_plans',
+    Profissionais: 'view_professionals',
+    'Notas Clínicas': 'manage_patients',
+    Lembretes: 'manage_reminders',
+    'Relatórios Financeiros': 'view_financial_reports',
+    Configurações: 'access_settings',
+  }
+
+  const filteredNav = navigation.filter((item) => {
+    const perm = permissionsMap[item.name]
+    return perm ? hasPermission(perm) : true
+  })
 
   return (
     <Sidebar>
