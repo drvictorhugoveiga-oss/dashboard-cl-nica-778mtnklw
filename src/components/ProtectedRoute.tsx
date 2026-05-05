@@ -1,22 +1,22 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 
-const routePermissions: Record<string, string> = {
-  '/': 'view_dashboard',
-  '/pacientes': 'manage_patients',
-  '/planos': 'edit_plans',
-  '/profissionais': 'view_professionals',
-  '/notas-clinicas': 'manage_patients',
-  '/lembretes': 'manage_reminders',
-  '/relatorios-financeiros': 'view_financial_reports',
-  '/configuracoes': 'access_settings',
+const routePermissions: Record<string, { resource: string; action: string }> = {
+  '/': { resource: 'dashboard', action: 'view' },
+  '/pacientes': { resource: 'patients', action: 'manage' },
+  '/planos': { resource: 'plans', action: 'edit' },
+  '/profissionais': { resource: 'professionals', action: 'view' },
+  '/notas-clinicas': { resource: 'patients', action: 'manage' },
+  '/lembretes': { resource: 'reminders', action: 'manage' },
+  '/relatorios-financeiros': { resource: 'financial_reports', action: 'view' },
+  '/configuracoes': { resource: 'settings', action: 'access' },
 }
 
 export function ProtectedRoute() {
-  const { user, loading, hasPermission } = useAuth()
+  const { usuario, carregando, temPermissao } = useAuth()
   const location = useLocation()
 
-  if (loading) {
+  if (carregando) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-4">
@@ -27,14 +27,14 @@ export function ProtectedRoute() {
     )
   }
 
-  if (!user) {
+  if (!usuario) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
   const baseRoute = location.pathname === '/' ? '/' : '/' + location.pathname.split('/')[1]
   const requiredPerm = routePermissions[baseRoute]
 
-  if (requiredPerm && !hasPermission(requiredPerm)) {
+  if (requiredPerm && !temPermissao(requiredPerm.resource, requiredPerm.action)) {
     return (
       <div className="flex min-h-screen items-center justify-center flex-col gap-4">
         <h2 className="text-2xl font-bold">Acesso Negado</h2>

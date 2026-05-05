@@ -1,32 +1,61 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { HeartPulse } from 'lucide-react'
+import { HeartPulse, Loader2 } from 'lucide-react'
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+
+const loginSchema = z.object({
+  email: z.string().email({ message: 'Formato de e-mail inválido' }),
+  password: z.string().min(8, { message: 'A senha deve ter no mínimo 8 caracteres' }),
+})
+
+type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const { signIn } = useAuth()
+  const { login, carregando, usuario } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    const { error } = await signIn(email, password)
-    setIsLoading(false)
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  })
+
+  useEffect(() => {
+    if (usuario) {
+      navigate('/')
+    }
+  }, [usuario, navigate])
+
+  const onSubmit = async (values: LoginFormValues) => {
+    const { error } = await login(values.email, values.password)
 
     if (error) {
       toast({
         variant: 'destructive',
         title: 'Erro ao fazer login',
-        description: 'Credenciais inválidas. Tente novamente.',
+        description: error,
       })
     } else {
       navigate('/')
@@ -46,34 +75,60 @@ export default function Login() {
           <CardDescription>Entre com suas credenciais para acessar</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="admin@clinicaviva.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>E-mail</FormLabel>
+                    <FormControl>
+                      <Input placeholder="admin@clinica.com" {...field} disabled={carregando} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} disabled={carregando} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
+              <Button type="submit" className="w-full" disabled={carregando}>
+                {carregando ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </Button>
+            </form>
+          </Form>
         </CardContent>
+        <CardFooter className="flex justify-center border-t p-4">
+          <Button variant="link" className="text-xs text-muted-foreground" disabled>
+            Esqueceu a senha?
+          </Button>
+        </CardFooter>
       </Card>
+
+      <div className="fixed bottom-4 right-4 bg-background border p-4 rounded-lg shadow-lg text-sm max-w-xs z-50">
+        <p className="font-bold mb-2">Credenciais de Teste:</p>
+        <p>Email: admin@clinica.com</p>
+        <p>Senha: senha123456</p>
+        <p>Role: admin</p>
+      </div>
     </div>
   )
 }

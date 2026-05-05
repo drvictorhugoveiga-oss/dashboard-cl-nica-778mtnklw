@@ -35,22 +35,22 @@ const navigation = [
 
 export function AppSidebar() {
   const location = useLocation()
-  const { user, signOut, hasPermission } = useAuth()
+  const { usuario, logout, temPermissao } = useAuth()
 
-  const permissionsMap: Record<string, string> = {
-    Dashboard: 'view_dashboard',
-    Pacientes: 'manage_patients',
-    Planos: 'edit_plans',
-    Profissionais: 'view_professionals',
-    'Notas Clínicas': 'manage_patients',
-    Lembretes: 'manage_reminders',
-    'Relatórios Financeiros': 'view_financial_reports',
-    Configurações: 'access_settings',
+  const permissionsMap: Record<string, { resource: string; action: string }> = {
+    Dashboard: { resource: 'dashboard', action: 'view' },
+    Pacientes: { resource: 'patients', action: 'manage' },
+    Planos: { resource: 'plans', action: 'edit' },
+    Profissionais: { resource: 'professionals', action: 'view' },
+    'Notas Clínicas': { resource: 'patients', action: 'manage' },
+    Lembretes: { resource: 'reminders', action: 'manage' },
+    'Relatórios Financeiros': { resource: 'financial_reports', action: 'view' },
+    Configurações: { resource: 'settings', action: 'access' },
   }
 
   const filteredNav = navigation.filter((item) => {
-    const perm = permissionsMap[item.name]
-    return perm ? hasPermission(perm) : true
+    const req = permissionsMap[item.name]
+    return req ? temPermissao(req.resource, req.action) : true
   })
 
   return (
@@ -92,16 +92,18 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-4 bg-sidebar">
         <div className="flex items-center gap-3">
           <div className="size-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-medium uppercase shrink-0">
-            {user?.name?.[0] || user?.email?.[0] || 'U'}
+            {usuario?.name?.[0] || usuario?.email?.[0] || 'U'}
           </div>
           <div className="flex flex-col flex-1 truncate mr-2">
             <span className="text-sm font-medium leading-none truncate">
-              {user?.name || 'Usuário'}
+              {usuario?.name || usuario?.email?.split('@')[0] || 'Usuário'}
             </span>
-            <span className="text-xs text-sidebar-foreground/60 mt-1 truncate">{user?.email}</span>
+            <span className="text-xs text-sidebar-foreground/60 mt-1 truncate">
+              {usuario?.email}
+            </span>
           </div>
           <button
-            onClick={signOut}
+            onClick={logout}
             className="p-2 hover:bg-sidebar-accent rounded-md text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors shrink-0"
             title="Sair"
           >
