@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/use-auth'
 
 const routePermissions: Record<string, { resource: string; action: string }> = {
   '/': { resource: 'dashboard', action: 'view' },
+  '/dashboard': { resource: 'dashboard', action: 'view' },
   '/pacientes': { resource: 'patients', action: 'manage' },
   '/planos': { resource: 'plans', action: 'edit' },
   '/profissionais': { resource: 'professionals', action: 'view' },

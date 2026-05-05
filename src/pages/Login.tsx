@@ -44,7 +44,7 @@ export default function Login() {
 
   useEffect(() => {
     if (usuario) {
-      navigate('/')
+      navigate('/dashboard')
     }
   }, [usuario, navigate])
 
@@ -58,7 +58,7 @@ export default function Login() {
         description: error,
       })
     } else {
-      navigate('/')
+      navigate('/dashboard')
     }
   }
 

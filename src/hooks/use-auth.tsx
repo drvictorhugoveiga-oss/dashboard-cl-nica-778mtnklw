@@ -46,23 +46,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const init = async () => {
-      const token = localStorage.getItem('auth_token')
-      const userId = localStorage.getItem('user_id')
-      const roleId = localStorage.getItem('user_role')
+      const token = localStorage.getItem('auth_token') || pb.authStore.token
+      const refreshToken = localStorage.getItem('refresh_token')
 
-      if (token && pb.authStore.isValid) {
-        setUsuario({
-          id: pb.authStore.record?.id || userId || '',
-          email: pb.authStore.record?.email || '',
-          role_id: pb.authStore.record?.role_id || roleId || '',
-          name: pb.authStore.record?.name || '',
-        })
-        if (pb.authStore.record?.role_id) {
-          await loadPermissions(pb.authStore.record.role_id)
+      if (token) {
+        try {
+          const res = await pb.send('/backend/v1/auth/refresh-token', {
+            method: 'POST',
+            body: JSON.stringify({ refresh_token: refreshToken || token }),
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          })
+
+          if (res.token) {
+            localStorage.setItem('auth_token', res.token)
+            if (res.refresh_token) localStorage.setItem('refresh_token', res.refresh_token)
+            localStorage.setItem('user_id', res.user_id || res.record?.id)
+            localStorage.setItem('user_role', res.role_id || res.record?.role_id)
+            pb.authStore.save(res.token, res.record || { id: res.user_id, role_id: res.role_id })
+          }
+
+          const currentUser = res.record || pb.authStore.record
+          setUsuario({
+            id: currentUser?.id || res.user_id || '',
+            email: currentUser?.email || '',
+            role_id: currentUser?.role_id || res.role_id || '',
+            name: currentUser?.name || '',
+          })
+
+          const finalRoleId = currentUser?.role_id || res.role_id
+          if (finalRoleId) {
+            await loadPermissions(finalRoleId)
+          }
+        } catch (e) {
+          console.error('Falha ao validar ou renovar token', e)
+          localStorage.removeItem('auth_token')
+          localStorage.removeItem('refresh_token')
+          localStorage.removeItem('user_id')
+          localStorage.removeItem('user_role')
+          pb.authStore.clear()
         }
       }
       setCarregando(false)
     }
+
     init()
 
     const unsubscribe = pb.authStore.onChange((_token, record) => {
@@ -90,7 +116,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const temPermissao = (resource: string, action: string) => {
     if (!usuario) return false
 
-    // Admin tem todas as permissões
     const isAdmin = permissions.some(
       (p) => p.expand?.role_id?.name === 'admin' || p.expand?.permission_id?.name === 'admin',
     )
@@ -118,19 +143,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
 
       localStorage.setItem('auth_token', res.token)
-      localStorage.setItem('user_id', res.user_id)
-      localStorage.setItem('user_role', res.role_id)
+      localStorage.setItem('user_id', res.user_id || res.record?.id)
+      localStorage.setItem('user_role', res.role_id || res.record?.role_id)
       if (res.refresh_token) {
         localStorage.setItem('refresh_token', res.refresh_token)
       }
 
       pb.authStore.save(res.token, res.record || { id: res.user_id, email, role_id: res.role_id })
 
+      try {
+        await pb.collection('audit_log').create({
+          user_id: res.user_id || res.record?.id,
+          action: 'login',
+          status: 'success',
+          resource: 'auth',
+        })
+      } catch (e) {
+        console.error('Falha ao registrar log de auditoria', e)
+      }
+
+      const currentUser = res.record || pb.authStore.record
+      setUsuario({
+        id: currentUser?.id || res.user_id || '',
+        email: currentUser?.email || email || '',
+        role_id: currentUser?.role_id || res.role_id || '',
+        name: currentUser?.name || '',
+      })
+
+      const finalRoleId = currentUser?.role_id || res.role_id
+      if (finalRoleId) {
+        await loadPermissions(finalRoleId)
+      }
+
       setCarregando(false)
       return { error: null }
     } catch (error: any) {
       setCarregando(false)
-      const msg = error.response?.erro || 'Email ou senha incorretos'
+      const msg = error.response?.erro || error.response?.message || 'E-mail ou senha incorretos'
       setErro(msg)
       return { error: msg }
     }
@@ -138,10 +187,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      if (pb.authStore.isValid) {
+      if (pb.authStore.isValid || localStorage.getItem('auth_token')) {
         await pb.send('/backend/v1/auth/logout', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('auth_token') || pb.authStore.token}`,
+          },
         })
       }
     } catch {
@@ -153,6 +205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('refresh_token')
     pb.authStore.clear()
     setUsuario(null)
+    setPermissions([])
   }
 
   return (
