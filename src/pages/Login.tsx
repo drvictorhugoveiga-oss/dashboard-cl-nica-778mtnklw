@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/form'
 
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Formato de e-mail inválido' }),
+  email: z.string().email({ message: 'Formato de email inválido' }),
   password: z.string().min(8, { message: 'A senha deve ter no mínimo 8 caracteres' }),
 })
 

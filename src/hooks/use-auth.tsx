@@ -5,6 +5,7 @@ interface Usuario {
   id: string
   email: string
   role_id: string
+  role_name?: string
   name?: string
 }
 
@@ -66,17 +67,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
 
           const currentUser = res.record || pb.authStore.record
+          const finalRoleId = currentUser?.role_id || res.role_id || ''
+
+          let roleName = ''
+          if (finalRoleId) {
+            try {
+              const roleRecord = await pb.collection('roles').getOne(finalRoleId)
+              roleName = roleRecord.name
+            } catch (e) {
+              console.error('Falha ao carregar role', e)
+            }
+            await loadPermissions(finalRoleId)
+          }
+
           setUsuario({
             id: currentUser?.id || res.user_id || '',
             email: currentUser?.email || '',
-            role_id: currentUser?.role_id || res.role_id || '',
+            role_id: finalRoleId,
+            role_name: roleName,
             name: currentUser?.name || '',
           })
-
-          const finalRoleId = currentUser?.role_id || res.role_id
-          if (finalRoleId) {
-            await loadPermissions(finalRoleId)
-          }
         } catch (e) {
           console.error('Falha ao validar ou renovar token', e)
           localStorage.removeItem('auth_token')
@@ -91,17 +101,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     init()
 
-    const unsubscribe = pb.authStore.onChange((_token, record) => {
+    const unsubscribe = pb.authStore.onChange(async (_token, record) => {
       if (record) {
+        let roleName = ''
+        if (record.role_id) {
+          try {
+            const roleRecord = await pb.collection('roles').getOne(record.role_id)
+            roleName = roleRecord.name
+          } catch {
+            /* intentionally ignored */
+          }
+          loadPermissions(record.role_id)
+        }
+
         setUsuario({
           id: record.id,
           email: record.email,
           role_id: record.role_id,
+          role_name: roleName,
           name: record.name,
         })
-        if (record.role_id) {
-          loadPermissions(record.role_id)
-        }
       } else {
         setUsuario(null)
         setPermissions([])
@@ -163,23 +182,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const currentUser = res.record || pb.authStore.record
+      const finalRoleId = currentUser?.role_id || res.role_id || ''
+
+      let roleName = ''
+      if (finalRoleId) {
+        try {
+          const roleRecord = await pb.collection('roles').getOne(finalRoleId)
+          roleName = roleRecord.name
+        } catch (e) {
+          console.error('Falha ao carregar role no login', e)
+        }
+        await loadPermissions(finalRoleId)
+      }
+
       setUsuario({
         id: currentUser?.id || res.user_id || '',
         email: currentUser?.email || email || '',
-        role_id: currentUser?.role_id || res.role_id || '',
+        role_id: finalRoleId,
+        role_name: roleName,
         name: currentUser?.name || '',
       })
-
-      const finalRoleId = currentUser?.role_id || res.role_id
-      if (finalRoleId) {
-        await loadPermissions(finalRoleId)
-      }
 
       setCarregando(false)
       return { error: null }
     } catch (error: any) {
       setCarregando(false)
-      const msg = error.response?.erro || error.response?.message || 'E-mail ou senha incorretos'
+      const msg = error.response?.erro || error.response?.message || 'Email ou senha incorretos'
       setErro(msg)
       return { error: msg }
     }
