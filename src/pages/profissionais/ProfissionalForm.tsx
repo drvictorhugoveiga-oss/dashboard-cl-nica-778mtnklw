@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createProfessional, updateProfessional } from '@/services/professionals'
+import { getUsers, User } from '@/services/users'
 import { useToast } from '@/hooks/use-toast'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 import { Switch } from '@/components/ui/switch'
@@ -36,7 +37,7 @@ import { cn } from '@/lib/utils'
 const formSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
   specialty: z.enum(
-    ['nutrição', 'psicologia', 'fisioterapia', 'fonoaudiologia', 'enfermagem', 'médico'],
+    ['enfermagem', 'fisioterapia', 'fonoaudiologia', 'medicina', 'nutrição', 'psicologia'],
     {
       required_error: 'Selecione uma especialidade',
     },
@@ -44,6 +45,7 @@ const formSchema = z.object({
   email: z.string().email('Formato de email inválido').min(1, 'Email é obrigatório'),
   phone: z.string().min(1, 'Telefone é obrigatório'),
   status: z.enum(['active', 'inactive']),
+  user_id: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -56,15 +58,23 @@ interface Props {
 
 export function ProfissionalForm({ open, onOpenChange, item }: Props) {
   const { toast } = useToast()
+  const [users, setUsers] = useState<User[]>([])
+
+  useEffect(() => {
+    if (open) {
+      getUsers().then(setUsers).catch(console.error)
+    }
+  }, [open])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      specialty: 'nutrição',
+      specialty: 'enfermagem',
       email: '',
       phone: '',
       status: 'active',
+      user_id: '',
     },
     mode: 'onTouched',
   })
@@ -73,29 +83,42 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
     if (open) {
       if (item) {
         form.reset({
-          name: item.name,
-          specialty: item.specialty,
-          email: item.email,
-          phone: item.phone,
-          status: item.status,
+          name: item.name || '',
+          specialty: item.specialty || 'enfermagem',
+          email: item.email || '',
+          phone: item.phone || '',
+          status: item.status || 'active',
+          user_id: item.user_id || '',
         })
       } else {
-        form.reset({ name: '', specialty: 'nutrição', email: '', phone: '', status: 'active' })
+        form.reset({
+          name: '',
+          specialty: 'enfermagem',
+          email: '',
+          phone: '',
+          status: 'active',
+          user_id: '',
+        })
       }
     }
   }, [open, item, form])
 
   const onSubmit = async (values: FormValues) => {
     try {
+      const payload = { ...values }
+      if (payload.user_id === 'none' || !payload.user_id) {
+        payload.user_id = ''
+      }
+
       if (item) {
-        await updateProfessional(item.id, values)
+        await updateProfessional(item.id, payload)
         toast({
           title: 'Profissional atualizado com sucesso',
           className: 'bg-success text-success-foreground',
           duration: 3000,
         })
       } else {
-        await createProfessional(values)
+        await createProfessional(payload)
         toast({
           title: 'Profissional criado com sucesso',
           className: 'bg-success text-success-foreground',
@@ -140,7 +163,7 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] rounded-lg p-6 data-[state=open]:animate-fade-in duration-200">
+      <DialogContent className="sm:max-w-[425px] rounded-lg p-6 data-[state=open]:animate-fade-in duration-200 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             {item ? 'Editar Profissional' : 'Novo Profissional'}
@@ -168,7 +191,7 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
               render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel className="text-sm">Especialidade</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger
                         className={cn(
@@ -180,12 +203,12 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="nutrição">Nutrição</SelectItem>
-                      <SelectItem value="psicologia">Psicologia</SelectItem>
+                      <SelectItem value="enfermagem">Enfermagem</SelectItem>
                       <SelectItem value="fisioterapia">Fisioterapia</SelectItem>
                       <SelectItem value="fonoaudiologia">Fonoaudiologia</SelectItem>
-                      <SelectItem value="enfermagem">Enfermagem</SelectItem>
-                      <SelectItem value="médico">Médico</SelectItem>
+                      <SelectItem value="medicina">Medicina</SelectItem>
+                      <SelectItem value="nutrição">Nutrição</SelectItem>
+                      <SelectItem value="psicologia">Psicologia</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage className="text-xs text-destructive" />
@@ -212,6 +235,39 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
                 <FormItem>
                   <FormLabel className="text-sm">Telefone</FormLabel>
                   <FormControl>{renderInput(field, fieldState, '(11) 99999-9999')}</FormControl>
+                  <FormMessage className="text-xs text-destructive" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="user_id"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Vincular Usuário (Opcional)</FormLabel>
+                  <Select
+                    onValueChange={(val) => field.onChange(val === 'none' ? '' : val)}
+                    value={field.value || 'none'}
+                  >
+                    <FormControl>
+                      <SelectTrigger
+                        className={cn(
+                          'h-10',
+                          fieldState.error && 'border-destructive focus-visible:ring-destructive',
+                        )}
+                      >
+                        <SelectValue placeholder="Nenhum usuário vinculado" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum usuário vinculado</SelectItem>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name || user.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage className="text-xs text-destructive" />
                 </FormItem>
               )}

@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Edit2 } from 'lucide-react'
+import { Edit2, Plus } from 'lucide-react'
 import { useRealtime } from '@/hooks/use-realtime'
 
 const SkeletonRow = () => (
@@ -249,11 +249,23 @@ export default function Configuracoes() {
 
         <TabsContent value="professionals" className="space-y-4 outline-none">
           <Card className="shadow-subtle border-border/50">
-            <CardHeader>
-              <CardTitle>Profissionais</CardTitle>
-              <CardDescription>
-                Gerencie a equipe, suas especialidades e status de atuação.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div className="space-y-1.5">
+                <CardTitle>Profissionais</CardTitle>
+                <CardDescription>
+                  Gerencie a equipe, suas especialidades e status de atuação.
+                </CardDescription>
+              </div>
+              <Button
+                onClick={() => {
+                  setSelectedProf(null)
+                  setProfModalOpen(true)
+                }}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                <Plus className="size-4 mr-2" />
+                Novo Profissional
+              </Button>
             </CardHeader>
             <CardContent>
               {loadingProfs ? (

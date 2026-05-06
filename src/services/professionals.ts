@@ -7,6 +7,7 @@ export interface Professional {
   email?: string
   phone?: string
   status: 'active' | 'inactive'
+  user_id?: string
   created: string
   updated: string
 }

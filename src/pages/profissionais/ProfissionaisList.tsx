@@ -86,12 +86,12 @@ export function ProfissionaisList({ selectedProfId, onSelectProf }: Props) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as especialidades</SelectItem>
-            <SelectItem value="nutrição">Nutrição</SelectItem>
-            <SelectItem value="psicologia">Psicologia</SelectItem>
+            <SelectItem value="enfermagem">Enfermagem</SelectItem>
             <SelectItem value="fisioterapia">Fisioterapia</SelectItem>
             <SelectItem value="fonoaudiologia">Fonoaudiologia</SelectItem>
-            <SelectItem value="enfermagem">Enfermagem</SelectItem>
-            <SelectItem value="médico">Médico</SelectItem>
+            <SelectItem value="medicina">Medicina</SelectItem>
+            <SelectItem value="nutrição">Nutrição</SelectItem>
+            <SelectItem value="psicologia">Psicologia</SelectItem>
           </SelectContent>
         </Select>
         <Button

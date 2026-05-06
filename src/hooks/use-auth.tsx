@@ -6,6 +6,7 @@ interface Usuario {
   email: string
   role_id: string
   role_name?: string
+  role?: string
   name?: string
 }
 
@@ -85,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             email: currentUser?.email || '',
             role_id: finalRoleId,
             role_name: roleName,
+            role: currentUser?.role || '',
             name: currentUser?.name || '',
           })
         } catch (e) {
@@ -119,6 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email: record.email,
           role_id: record.role_id,
           role_name: roleName,
+          role: record.role || '',
           name: record.name,
         })
       } else {
@@ -135,10 +138,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const temPermissao = (resource: string, action: string) => {
     if (!usuario) return false
 
+    if (usuario.role === 'admin' || usuario.role_name === 'admin') return true
+
     const isAdmin = permissions.some(
       (p) => p.expand?.role_id?.name === 'admin' || p.expand?.permission_id?.name === 'admin',
     )
     if (isAdmin) return true
+
+    // Base access for staff to avoid complete lockouts if permissions collection is empty
+    if (usuario.role === 'staff' || usuario.role_name === 'staff') {
+      if (resource === 'settings') return false
+      return true
+    }
 
     return permissions.some((p) => {
       const perm = p.expand?.permission_id
@@ -200,6 +211,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email: currentUser?.email || email || '',
         role_id: finalRoleId,
         role_name: roleName,
+        role: currentUser?.role || '',
         name: currentUser?.name || '',
       })
 

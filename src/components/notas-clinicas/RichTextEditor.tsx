@@ -54,7 +54,10 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className="h-8 w-8 p-0 hover:bg-gray-200"
-          onClick={() => execCommand('bold')}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            execCommand('bold')
+          }}
           title="Negrito"
         >
           <Bold className="h-4 w-4" />
@@ -64,7 +67,10 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className="h-8 w-8 p-0 hover:bg-gray-200"
-          onClick={() => execCommand('italic')}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            execCommand('italic')
+          }}
           title="Itálico"
         >
           <Italic className="h-4 w-4" />
@@ -75,7 +81,10 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className="h-8 w-8 p-0 hover:bg-gray-200"
-          onClick={() => execCommand('insertUnorderedList')}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            execCommand('insertUnorderedList')
+          }}
           title="Lista com Marcadores"
         >
           <List className="h-4 w-4" />
@@ -85,7 +94,10 @@ export function RichTextEditor({
           variant="ghost"
           size="sm"
           className="h-8 w-8 p-0 hover:bg-gray-200"
-          onClick={() => execCommand('insertOrderedList')}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            execCommand('insertOrderedList')
+          }}
           title="Lista Numerada"
         >
           <ListOrdered className="h-4 w-4" />
