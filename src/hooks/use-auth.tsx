@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import pb from '@/lib/pocketbase/client'
+import { ClientResponseError } from 'pocketbase'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
 
 interface Usuario {
   id: string
@@ -15,7 +17,7 @@ interface AuthContextType {
   carregando: boolean
   erro: string | null
   temPermissao: (resource: string, action: string) => boolean
-  login: (email: string, password: string) => Promise<{ error: any }>
+  login: (email: string, password: string) => Promise<{ error: string | null }>
   logout: () => Promise<void>
 }
 
@@ -90,13 +92,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             name: currentUser?.name || '',
           })
         } catch (e) {
-          console.error('Falha ao validar ou renovar token', e)
+          if (e instanceof ClientResponseError && e.status === 401) {
+            console.warn('Sessão expirada. Limpando credenciais de acesso.')
+          } else {
+            console.error('Falha ao validar ou renovar token', e)
+          }
           localStorage.removeItem('auth_token')
           localStorage.removeItem('refresh_token')
           localStorage.removeItem('user_id')
           localStorage.removeItem('user_role')
           pb.authStore.clear()
+          setUsuario(null)
+          setPermissions([])
         }
+      } else {
+        pb.authStore.clear()
+        setUsuario(null)
+        setPermissions([])
       }
       setCarregando(false)
     }
@@ -145,7 +157,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     )
     if (isAdmin) return true
 
-    // Base access for staff to avoid complete lockouts if permissions collection is empty
     if (usuario.role === 'staff' || usuario.role_name === 'staff') {
       if (resource === 'settings') return false
       return true
@@ -217,9 +228,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setCarregando(false)
       return { error: null }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setCarregando(false)
-      const msg = error.response?.erro || error.response?.message || 'Email ou senha incorretos'
+      let msg = getErrorMessage(error)
+      if (!msg || msg === 'An unexpected error occurred.') {
+        msg = 'Email ou senha incorretos'
+      }
+
+      if (error instanceof ClientResponseError && error.response?.erro) {
+        msg = error.response.erro
+      } else if (error instanceof ClientResponseError && error.response?.message) {
+        msg = error.response.message
+      }
+
       setErro(msg)
       return { error: msg }
     }

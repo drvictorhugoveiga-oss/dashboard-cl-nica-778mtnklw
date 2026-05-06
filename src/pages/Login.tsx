@@ -55,7 +55,7 @@ export default function Login() {
       toast({
         variant: 'destructive',
         title: 'Erro ao fazer login',
-        description: error,
+        description: typeof error === 'string' ? error : 'Credenciais inválidas. Tente novamente.',
       })
     } else {
       navigate('/dashboard')
