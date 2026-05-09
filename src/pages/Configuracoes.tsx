@@ -357,6 +357,4 @@ export default function Configuracoes() {
       />
 
       <ProfissionalForm open={profModalOpen} onOpenChange={setProfModalOpen} item={selectedProf} />
-    </div>
-  )
-}
+    <
