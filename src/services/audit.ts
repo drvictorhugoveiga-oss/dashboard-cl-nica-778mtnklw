@@ -8,10 +8,16 @@ export const logFrontendAudit = async (
   details: any = {},
 ) => {
   try {
-    await pb.send('/backend/v1/audit', {
-      method: 'POST',
-      body: JSON.stringify({ action, resource, resource_id, status, details }),
-      headers: { 'Content-Type': 'application/json' },
+    const userId = pb.authStore.record?.id
+    if (!userId) return
+
+    await pb.collection('audit_log').create({
+      user_id: userId,
+      action,
+      resource,
+      resource_id,
+      status,
+      details,
     })
   } catch (e) {
     console.error('Audit log failed', e)

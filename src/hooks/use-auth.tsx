@@ -36,6 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [permissions, setPermissions] = useState<any[]>([])
 
   const loadPermissions = async (roleId: string) => {
+    if (!roleId) return
     try {
       const perms = await pb.collection('role_permissions').getFullList({
         filter: `role_id = '${roleId}'`,
@@ -48,69 +49,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const loadRoleAndPermissions = async (record: any) => {
+    let roleName = ''
+    if (record?.role_id) {
+      try {
+        const roleRecord = await pb.collection('roles').getOne(record.role_id)
+        roleName = roleRecord.name
+      } catch (e) {
+        console.error('Falha ao carregar role', e)
+      }
+      await loadPermissions(record.role_id)
+    }
+    return roleName
+  }
+
   useEffect(() => {
     const init = async () => {
-      const token = localStorage.getItem('auth_token') || pb.authStore.token
-      const refreshToken = localStorage.getItem('refresh_token')
-
-      if (token) {
+      if (pb.authStore.isValid) {
         try {
-          const res = await pb.send('/backend/v1/auth/refresh-token', {
-            method: 'POST',
-            body: JSON.stringify({ refresh_token: refreshToken || token }),
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          })
-
-          let currentUserId = ''
-
-          if (res.token) {
-            currentUserId = res.user_id || res.record?.id || res.user?.id || res.id || ''
-            const roleId = res.role_id || res.record?.role_id || res.user?.role_id || ''
-
-            localStorage.setItem('auth_token', res.token)
-            if (res.refresh_token) localStorage.setItem('refresh_token', res.refresh_token)
-            if (currentUserId) localStorage.setItem('user_id', currentUserId)
-            if (roleId) localStorage.setItem('user_role', roleId)
-
-            pb.authStore.save(
-              res.token,
-              res.record || res.user || { id: currentUserId, role_id: roleId },
-            )
-          }
-
-          const currentUser = res.record || res.user || pb.authStore.record
-          const finalRoleId = currentUser?.role_id || res.role_id || res.user?.role_id || ''
-          currentUserId = currentUserId || currentUser?.id || ''
-
-          let roleName = ''
-          if (finalRoleId) {
-            try {
-              const roleRecord = await pb.collection('roles').getOne(finalRoleId)
-              roleName = roleRecord.name
-            } catch (e) {
-              console.error('Falha ao carregar role', e)
-            }
-            await loadPermissions(finalRoleId)
-          }
+          const authData = await pb.collection('users').authRefresh()
+          const record = authData.record
+          const roleName = await loadRoleAndPermissions(record)
 
           setUsuario({
-            id: currentUserId,
-            email: currentUser?.email || '',
-            role_id: finalRoleId,
+            id: record.id,
+            email: record.email,
+            role_id: record.role_id || '',
             role_name: roleName,
-            role: currentUser?.role || '',
-            name: currentUser?.name || '',
+            role: record.role || '',
+            name: record.name || '',
           })
         } catch (e) {
-          if (e instanceof ClientResponseError && e.status === 401) {
-            console.warn('Sessão expirada. Limpando credenciais de acesso.')
-          } else {
-            console.error('Falha ao validar ou renovar token', e)
-          }
-          localStorage.removeItem('auth_token')
-          localStorage.removeItem('refresh_token')
-          localStorage.removeItem('user_id')
-          localStorage.removeItem('user_role')
+          console.warn('Sessão expirada. Limpando credenciais.', e)
           pb.authStore.clear()
           setUsuario(null)
           setPermissions([])
@@ -127,24 +97,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const unsubscribe = pb.authStore.onChange(async (_token, record) => {
       if (record) {
-        let roleName = ''
-        if (record.role_id) {
-          try {
-            const roleRecord = await pb.collection('roles').getOne(record.role_id)
-            roleName = roleRecord.name
-          } catch {
-            /* intentionally ignored */
-          }
-          loadPermissions(record.role_id)
-        }
+        const roleName = await loadRoleAndPermissions(record)
 
         setUsuario({
           id: record.id,
           email: record.email,
-          role_id: record.role_id,
+          role_id: record.role_id || '',
           role_name: roleName,
           role: record.role || '',
-          name: record.name,
+          name: record.name || '',
         })
       } else {
         setUsuario(null)
@@ -187,63 +148,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setCarregando(true)
       setErro(null)
 
-      const res = await pb.send('/backend/v1/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-        headers: { 'Content-Type': 'application/json' },
-      })
+      const authData = await pb.collection('users').authWithPassword(email, password)
+      const record = authData.record
+      const currentUserId = record.id
 
-      const currentUserId = res.user_id || res.record?.id || res.user?.id || res.id || ''
-      const roleId = res.role_id || res.record?.role_id || res.user?.role_id || ''
-
-      localStorage.setItem('auth_token', res.token)
-      if (currentUserId) localStorage.setItem('user_id', currentUserId)
-      if (roleId) localStorage.setItem('user_role', roleId)
-      if (res.refresh_token) {
-        localStorage.setItem('refresh_token', res.refresh_token)
-      }
-
-      pb.authStore.save(
-        res.token,
-        res.record || res.user || { id: currentUserId, email, role_id: roleId },
-      )
-
-      try {
-        if (currentUserId) {
-          await pb.collection('audit_log').create({
+      if (currentUserId) {
+        pb.collection('audit_log')
+          .create({
             user_id: currentUserId,
             action: 'login',
             status: 'success',
             resource: 'auth',
           })
-        } else {
-          console.warn('O ID do usuário está ausente, ignorando criação do audit_log')
-        }
-      } catch (e) {
-        console.error('Falha ao registrar log de auditoria', e)
+          .catch((e) => console.error('Falha ao registrar log de auditoria', e))
       }
 
-      const currentUser = res.record || res.user || pb.authStore.record
-      const finalRoleId = currentUser?.role_id || roleId || ''
-
-      let roleName = ''
-      if (finalRoleId) {
-        try {
-          const roleRecord = await pb.collection('roles').getOne(finalRoleId)
-          roleName = roleRecord.name
-        } catch (e) {
-          console.error('Falha ao carregar role no login', e)
-        }
-        await loadPermissions(finalRoleId)
-      }
+      const roleName = await loadRoleAndPermissions(record)
 
       setUsuario({
-        id: currentUserId || currentUser?.id || '',
-        email: currentUser?.email || email || '',
-        role_id: finalRoleId,
+        id: currentUserId,
+        email: record.email,
+        role_id: record.role_id || '',
         role_name: roleName,
-        role: currentUser?.role || '',
-        name: currentUser?.name || '',
+        role: record.role || '',
+        name: record.name || '',
       })
 
       setCarregando(false)
@@ -251,14 +179,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: unknown) {
       setCarregando(false)
       let msg = getErrorMessage(error)
+
       if (!msg || msg === 'An unexpected error occurred.') {
         msg = 'Email ou senha incorretos'
       }
 
-      if (error instanceof ClientResponseError && error.response?.erro) {
-        msg = error.response.erro
-      } else if (error instanceof ClientResponseError && error.response?.message) {
-        msg = error.response.message
+      if (error instanceof ClientResponseError && error.status === 400) {
+        msg = 'Credenciais inválidas. Tente novamente.'
       }
 
       setErro(msg)
@@ -268,22 +195,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      if (pb.authStore.isValid || localStorage.getItem('auth_token')) {
-        await pb.send('/backend/v1/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('auth_token') || pb.authStore.token}`,
-          },
-        })
+      if (pb.authStore.isValid) {
+        const currentUserId = pb.authStore.record?.id
+        if (currentUserId) {
+          pb.collection('audit_log')
+            .create({
+              user_id: currentUserId,
+              action: 'logout',
+              status: 'success',
+              resource: 'auth',
+            })
+            .catch(() => {})
+        }
+        await pb.send('/backend/v1/auth/logout', { method: 'POST' }).catch(() => {})
       }
     } catch {
-      /* intentionally ignored */
+      /* ignored */
     }
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user_id')
-    localStorage.removeItem('user_role')
-    localStorage.removeItem('refresh_token')
     pb.authStore.clear()
     setUsuario(null)
     setPermissions([])
