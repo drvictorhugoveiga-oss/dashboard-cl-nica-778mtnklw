@@ -61,16 +61,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           })
 
+          let currentUserId = ''
+
           if (res.token) {
+            currentUserId = res.user_id || res.record?.id || res.user?.id || res.id || ''
+            const roleId = res.role_id || res.record?.role_id || res.user?.role_id || ''
+
             localStorage.setItem('auth_token', res.token)
             if (res.refresh_token) localStorage.setItem('refresh_token', res.refresh_token)
-            localStorage.setItem('user_id', res.user_id || res.record?.id)
-            localStorage.setItem('user_role', res.role_id || res.record?.role_id)
-            pb.authStore.save(res.token, res.record || { id: res.user_id, role_id: res.role_id })
+            if (currentUserId) localStorage.setItem('user_id', currentUserId)
+            if (roleId) localStorage.setItem('user_role', roleId)
+
+            pb.authStore.save(
+              res.token,
+              res.record || res.user || { id: currentUserId, role_id: roleId },
+            )
           }
 
-          const currentUser = res.record || pb.authStore.record
-          const finalRoleId = currentUser?.role_id || res.role_id || ''
+          const currentUser = res.record || res.user || pb.authStore.record
+          const finalRoleId = currentUser?.role_id || res.role_id || res.user?.role_id || ''
+          currentUserId = currentUserId || currentUser?.id || ''
 
           let roleName = ''
           if (finalRoleId) {
@@ -84,7 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
 
           setUsuario({
-            id: currentUser?.id || res.user_id || '',
+            id: currentUserId,
             email: currentUser?.email || '',
             role_id: finalRoleId,
             role_name: roleName,
@@ -183,28 +193,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         headers: { 'Content-Type': 'application/json' },
       })
 
+      const currentUserId = res.user_id || res.record?.id || res.user?.id || res.id || ''
+      const roleId = res.role_id || res.record?.role_id || res.user?.role_id || ''
+
       localStorage.setItem('auth_token', res.token)
-      localStorage.setItem('user_id', res.user_id || res.record?.id)
-      localStorage.setItem('user_role', res.role_id || res.record?.role_id)
+      if (currentUserId) localStorage.setItem('user_id', currentUserId)
+      if (roleId) localStorage.setItem('user_role', roleId)
       if (res.refresh_token) {
         localStorage.setItem('refresh_token', res.refresh_token)
       }
 
-      pb.authStore.save(res.token, res.record || { id: res.user_id, email, role_id: res.role_id })
+      pb.authStore.save(
+        res.token,
+        res.record || res.user || { id: currentUserId, email, role_id: roleId },
+      )
 
       try {
-        await pb.collection('audit_log').create({
-          user_id: res.user_id || res.record?.id,
-          action: 'login',
-          status: 'success',
-          resource: 'auth',
-        })
+        if (currentUserId) {
+          await pb.collection('audit_log').create({
+            user_id: currentUserId,
+            action: 'login',
+            status: 'success',
+            resource: 'auth',
+          })
+        } else {
+          console.warn('O ID do usuário está ausente, ignorando criação do audit_log')
+        }
       } catch (e) {
         console.error('Falha ao registrar log de auditoria', e)
       }
 
-      const currentUser = res.record || pb.authStore.record
-      const finalRoleId = currentUser?.role_id || res.role_id || ''
+      const currentUser = res.record || res.user || pb.authStore.record
+      const finalRoleId = currentUser?.role_id || roleId || ''
 
       let roleName = ''
       if (finalRoleId) {
@@ -218,7 +238,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setUsuario({
-        id: currentUser?.id || res.user_id || '',
+        id: currentUserId || currentUser?.id || '',
         email: currentUser?.email || email || '',
         role_id: finalRoleId,
         role_name: roleName,
