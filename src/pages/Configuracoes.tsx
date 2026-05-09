@@ -35,7 +35,7 @@ const SkeletonRow = () => (
 )
 
 export default function Configuracoes() {
-  const { user } = useAuth()
+  const { usuario } = useAuth()
   const { toast } = useToast()
 
   const [plans, setPlans] = useState<Plan[]>([])
@@ -90,11 +90,11 @@ export default function Configuracoes() {
   }
 
   useEffect(() => {
-    if (user?.role !== 'admin') return
+    if (usuario?.role !== 'admin') return
     loadPlans()
     loadProfessionals()
     loadCosts()
-  }, [user])
+  }, [usuario])
 
   useRealtime('plans', () => {
     loadPlans()
@@ -104,7 +104,7 @@ export default function Configuracoes() {
     loadProfessionals()
   })
 
-  if (user?.role !== 'admin') {
+  if (usuario?.role !== 'admin') {
     return <Navigate to="/" replace />
   }
 
