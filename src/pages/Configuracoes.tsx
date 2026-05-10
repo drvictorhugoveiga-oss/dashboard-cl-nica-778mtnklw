@@ -34,9 +34,14 @@ const SkeletonRow = () => (
   </div>
 )
 
+import { OperationalCostsList } from './configuracoes/OperationalCostsList'
+import { NoteTemplatesList } from './configuracoes/NoteTemplatesList'
+
 export default function Configuracoes() {
   const { usuario } = useAuth()
   const { toast } = useToast()
+
+  const isAdmin = usuario?.role === 'admin'
 
   const [plans, setPlans] = useState<Plan[]>([])
   const [loadingPlans, setLoadingPlans] = useState(true)
@@ -90,23 +95,20 @@ export default function Configuracoes() {
   }
 
   useEffect(() => {
-    if (usuario?.role !== 'admin') return
-    loadPlans()
-    loadProfessionals()
-    loadCosts()
-  }, [usuario])
+    if (isAdmin) {
+      loadPlans()
+      loadProfessionals()
+      loadCosts()
+    }
+  }, [isAdmin])
 
   useRealtime('plans', () => {
-    loadPlans()
+    if (isAdmin) loadPlans()
   })
 
   useRealtime('professionals', () => {
-    loadProfessionals()
+    if (isAdmin) loadProfessionals()
   })
-
-  if (usuario?.role !== 'admin') {
-    return <Navigate to="/" replace />
-  }
 
   const handleEditPlan = (plan: Plan) => {
     setSelectedPlan(plan)
@@ -171,179 +173,245 @@ export default function Configuracoes() {
         </p>
       </div>
 
-      <Tabs defaultValue="plans" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 sm:max-w-xl mb-6 h-auto p-1">
-          <TabsTrigger value="plans" className="py-2">
-            Planos
+      <Tabs defaultValue={isAdmin ? 'plans' : 'note_templates'} className="w-full">
+        <TabsList className="flex flex-wrap w-full mb-6 h-auto p-1 justify-start gap-2 bg-transparent">
+          {isAdmin && (
+            <TabsTrigger
+              value="plans"
+              className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card"
+            >
+              Planos
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger
+              value="professionals"
+              className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card"
+            >
+              Profissionais
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger
+              value="system_costs"
+              className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card"
+            >
+              Custo Fixo Global
+            </TabsTrigger>
+          )}
+          <TabsTrigger
+            value="operational_costs"
+            className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card"
+          >
+            Despesas Detalhadas
           </TabsTrigger>
-          <TabsTrigger value="professionals" className="py-2">
-            Profissionais
-          </TabsTrigger>
-          <TabsTrigger value="costs" className="py-2">
-            Custos Operacionais
+          <TabsTrigger
+            value="note_templates"
+            className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card"
+          >
+            Modelos de Notas
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="plans" className="space-y-4 outline-none">
+        {isAdmin && (
+          <TabsContent value="plans" className="space-y-4 outline-none">
+            <Card className="shadow-subtle border-border/50">
+              <CardHeader>
+                <CardTitle>Planos</CardTitle>
+                <CardDescription>
+                  Gerencie os detalhes e preços dos planos disponíveis.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingPlans ? (
+                  <div className="space-y-2">
+                    <SkeletonRow />
+                    <SkeletonRow />
+                  </div>
+                ) : (
+                  <div className="rounded-[8px] border border-border/50 bg-card overflow-x-auto shadow-subtle">
+                    <Table className="min-w-[600px]">
+                      <TableHeader className="bg-slate-50/80">
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Duração (meses)</TableHead>
+                          <TableHead>Preço (R$)</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {plans.map((plan) => (
+                          <TableRow key={plan.id} className="hover:bg-slate-50 transition-colors">
+                            <TableCell className="font-medium">{plan.name}</TableCell>
+                            <TableCell>{plan.duration_months}</TableCell>
+                            <TableCell>
+                              {plan.price.toLocaleString('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              })}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditPlan(plan)}
+                                className="text-primary hover:text-primary/80 hover:bg-primary/10 size-8"
+                              >
+                                <Edit2 className="size-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {plans.length === 0 && (
+                          <TableRow>
+                            <TableCell
+                              colSpan={4}
+                              className="h-24 text-center text-muted-foreground"
+                            >
+                              Nenhum plano encontrado.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="professionals" className="space-y-4 outline-none">
+            <Card className="shadow-subtle border-border/50">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div className="space-y-1.5">
+                  <CardTitle>Profissionais</CardTitle>
+                  <CardDescription>
+                    Gerencie a equipe, suas especialidades e status de atuação.
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={() => {
+                    setSelectedProf(null)
+                    setProfModalOpen(true)
+                  }}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  <Plus className="size-4 mr-2" />
+                  Novo Profissional
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {loadingProfs ? (
+                  <div className="space-y-2">
+                    <SkeletonRow />
+                    <SkeletonRow />
+                  </div>
+                ) : (
+                  <ProfissionaisTable
+                    data={professionals}
+                    onEdit={handleEditProf}
+                    onDelete={handleDeleteProf}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="system_costs" className="space-y-4 outline-none">
+            <Card className="shadow-subtle border-border/50 max-w-2xl">
+              <CardHeader>
+                <CardTitle>Custo Fixo Global</CardTitle>
+                <CardDescription>
+                  Configure os custos fixos mensais que são calculados no dashboard.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingCosts ? (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                      <div className="h-10 w-full max-w-sm rounded bg-muted animate-pulse" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                      <div className="h-24 w-full rounded bg-muted animate-pulse" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="cost" className="font-semibold">
+                        Custo Mensal Fixo (R$)
+                      </Label>
+                      <Input
+                        id="cost"
+                        type="number"
+                        step="0.01"
+                        value={costValue}
+                        onChange={(e) => setCostValue(e.target.value)}
+                        placeholder="Ex: 5000.00"
+                        className="max-w-sm transition-colors focus-visible:ring-primary"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Este valor é descontado do lucro líquido no dashboard.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="desc" className="font-semibold">
+                        Descrição
+                      </Label>
+                      <Textarea
+                        id="desc"
+                        value={costDesc}
+                        onChange={(e) => setCostDesc(e.target.value)}
+                        placeholder="Detalhes adicionais sobre os custos operacionais (aluguel, água, luz, etc)..."
+                        className="resize-none h-24 transition-colors focus-visible:ring-primary"
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleSaveCosts}
+                      disabled={savingCosts}
+                      className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto"
+                    >
+                      {savingCosts ? 'Salvando...' : 'Salvar Custos'}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        <TabsContent value="operational_costs" className="space-y-4 outline-none">
           <Card className="shadow-subtle border-border/50">
             <CardHeader>
-              <CardTitle>Planos</CardTitle>
+              <CardTitle>Despesas Detalhadas</CardTitle>
               <CardDescription>
-                Gerencie os detalhes e preços dos planos disponíveis.
+                Acompanhe e categorize as despesas operacionais da clínica.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loadingPlans ? (
-                <div className="space-y-2">
-                  <SkeletonRow />
-                  <SkeletonRow />
-                </div>
-              ) : (
-                <div className="rounded-[8px] border border-border/50 bg-card overflow-x-auto shadow-subtle">
-                  <Table className="min-w-[600px]">
-                    <TableHeader className="bg-slate-50/80">
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Duração (meses)</TableHead>
-                        <TableHead>Preço (R$)</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {plans.map((plan) => (
-                        <TableRow key={plan.id} className="hover:bg-slate-50 transition-colors">
-                          <TableCell className="font-medium">{plan.name}</TableCell>
-                          <TableCell>{plan.duration_months}</TableCell>
-                          <TableCell>
-                            {plan.price.toLocaleString('pt-BR', {
-                              style: 'currency',
-                              currency: 'BRL',
-                            })}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditPlan(plan)}
-                              className="text-primary hover:text-primary/80 hover:bg-primary/10 size-8"
-                            >
-                              <Edit2 className="size-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {plans.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                            Nenhum plano encontrado.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+              <OperationalCostsList isAdmin={isAdmin} />
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="professionals" className="space-y-4 outline-none">
+        <TabsContent value="note_templates" className="space-y-4 outline-none">
           <Card className="shadow-subtle border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <div className="space-y-1.5">
-                <CardTitle>Profissionais</CardTitle>
-                <CardDescription>
-                  Gerencie a equipe, suas especialidades e status de atuação.
-                </CardDescription>
-              </div>
-              <Button
-                onClick={() => {
-                  setSelectedProf(null)
-                  setProfModalOpen(true)
-                }}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                <Plus className="size-4 mr-2" />
-                Novo Profissional
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {loadingProfs ? (
-                <div className="space-y-2">
-                  <SkeletonRow />
-                  <SkeletonRow />
-                </div>
-              ) : (
-                <ProfissionaisTable
-                  data={professionals}
-                  onEdit={handleEditProf}
-                  onDelete={handleDeleteProf}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="costs" className="space-y-4 outline-none">
-          <Card className="shadow-subtle border-border/50 max-w-2xl">
             <CardHeader>
-              <CardTitle>Custos Operacionais</CardTitle>
-              <CardDescription>Configure os custos fixos mensais da clínica.</CardDescription>
+              <CardTitle>Modelos de Notas Clínicas</CardTitle>
+              <CardDescription>
+                Gerencie templates pré-formatados para agilizar as anotações clínicas.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {loadingCosts ? (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <div className="h-4 w-32 rounded bg-muted animate-pulse" />
-                    <div className="h-10 w-full max-w-sm rounded bg-muted animate-pulse" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-                    <div className="h-24 w-full rounded bg-muted animate-pulse" />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="cost" className="font-semibold">
-                      Custo Mensal Fixo (R$)
-                    </Label>
-                    <Input
-                      id="cost"
-                      type="number"
-                      step="0.01"
-                      value={costValue}
-                      onChange={(e) => setCostValue(e.target.value)}
-                      placeholder="Ex: 5000.00"
-                      className="max-w-sm transition-colors focus-visible:ring-primary"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Este valor é descontado do lucro líquido no dashboard.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="desc" className="font-semibold">
-                      Descrição
-                    </Label>
-                    <Textarea
-                      id="desc"
-                      value={costDesc}
-                      onChange={(e) => setCostDesc(e.target.value)}
-                      placeholder="Detalhes adicionais sobre os custos operacionais (aluguel, água, luz, etc)..."
-                      className="resize-none h-24 transition-colors focus-visible:ring-primary"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleSaveCosts}
-                    disabled={savingCosts}
-                    className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto"
-                  >
-                    {savingCosts ? 'Salvando...' : 'Salvar Custos'}
-                  </Button>
-                </div>
-              )}
+              <NoteTemplatesList />
             </CardContent>
           </Card>
         </TabsContent>
