@@ -11,6 +11,20 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Edit2, Eye, Trash2, UserX, Plus, Calendar } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { useState } from 'react'
+import { deletePatient } from '@/services/patients'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
+import { toast } from 'sonner'
 
 type Props = {
   patients: Patient[]
@@ -47,6 +61,25 @@ const getStatusBadge = (status: string) => {
 }
 
 export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDelete }: Props) {
+  const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const confirmDelete = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!patientToDelete) return
+    setIsDeleting(true)
+    try {
+      await deletePatient(patientToDelete.id)
+      toast.success('Paciente excluído com sucesso.')
+      setPatientToDelete(null)
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+      setPatientToDelete(null)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -129,7 +162,7 @@ export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDe
                 variant="ghost"
                 size="sm"
                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => onDelete(p)}
+                onClick={() => setPatientToDelete(p)}
               >
                 <Trash2 className="size-4 mr-1" /> Deletar
               </Button>
@@ -192,7 +225,10 @@ export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDe
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onDelete(p)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPatientToDelete(p)
+                      }}
                       title="Deletar"
                       className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
@@ -205,6 +241,33 @@ export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDe
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog
+        open={!!patientToDelete}
+        onOpenChange={(open) => !open && setPatientToDelete(null)}
+      >
+        <AlertDialogContent className="rounded-[8px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o paciente{' '}
+              <span className="font-semibold text-foreground">{patientToDelete?.name}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting} className="rounded-[8px]">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-[8px]"
+              disabled={isDeleting}
+              onClick={confirmDelete}
+            >
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -64,6 +64,18 @@ export const updatePatient = async (id: string, data: Partial<PatientFormData>) 
 
 export const deletePatient = async (id: string) => {
   try {
+    const [notes, reminders] = await Promise.all([
+      pb.collection('patient_notes').getList(1, 1, { filter: `patient_id = "${id}"` }),
+      pb.collection('reminders').getList(1, 1, { filter: `patient_id = "${id}"` }),
+    ])
+
+    if (notes.totalItems > 0) {
+      throw new Error('Não é possível excluir o paciente pois existem notas clínicas vinculadas.')
+    }
+    if (reminders.totalItems > 0) {
+      throw new Error('Não é possível excluir o paciente pois existem lembretes vinculados.')
+    }
+
     await pb.collection('patients').delete(id)
     await logFrontendAudit('delete', 'patients', id, 'success')
   } catch (e) {

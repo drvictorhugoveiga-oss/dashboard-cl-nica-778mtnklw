@@ -9,6 +9,21 @@ import { Button } from '@/components/ui/button'
 import { Patient } from '@/services/patients'
 import { differenceInDays, parseISO, isValid } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
+import { useState } from 'react'
+import { deletePatient } from '@/services/patients'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
+import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Trash2 } from 'lucide-react'
 
 type Props = {
   isOpen: boolean
@@ -42,6 +57,9 @@ const getStatusBadge = (status: string) => {
 }
 
 export function PatientDetailsModal({ isOpen, onClose, patient }: Props) {
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   if (!patient) return null
 
   let daysRemaining: number | null = null
@@ -117,12 +135,58 @@ export function PatientDetailsModal({ isOpen, onClose, patient }: Props) {
             </span>
           </div>
         </div>
-        <DialogFooter className="border-t border-border pt-4">
-          <Button onClick={onClose} variant="secondary" className="rounded-[8px]">
+        <DialogFooter className="border-t border-border pt-4 flex sm:justify-between items-center gap-2">
+          <Button
+            variant="destructive"
+            className="rounded-[8px] w-full sm:w-auto"
+            onClick={() => setShowDeleteAlert(true)}
+          >
+            <Trash2 className="size-4 mr-2" />
+            Excluir
+          </Button>
+          <Button onClick={onClose} variant="secondary" className="rounded-[8px] w-full sm:w-auto">
             Fechar
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogContent className="rounded-[8px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o paciente{' '}
+              <span className="font-semibold text-foreground">{patient.name}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting} className="rounded-[8px]">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-[8px]"
+              disabled={isDeleting}
+              onClick={async (e) => {
+                e.preventDefault()
+                setIsDeleting(true)
+                try {
+                  await deletePatient(patient.id)
+                  toast.success('Paciente excluído com sucesso.')
+                  setShowDeleteAlert(false)
+                  onClose()
+                } catch (error) {
+                  toast.error(getErrorMessage(error))
+                  setShowDeleteAlert(false)
+                } finally {
+                  setIsDeleting(false)
+                }
+              }}
+            >
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }
