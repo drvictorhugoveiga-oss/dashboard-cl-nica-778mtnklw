@@ -199,8 +199,8 @@ export default function NotasClinicas() {
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         note={selectedNote}
-        patientId={selectedPatientId}
-        patientName={selectedPatientName}
+        patientId={selectedNote ? selectedNote.patient_id : selectedPatientId}
+        patientName={selectedNote ? selectedNote.expand?.patient_id?.name : selectedPatientName}
         professionals={professionals}
         onSuccess={() => loadNotes()}
       />

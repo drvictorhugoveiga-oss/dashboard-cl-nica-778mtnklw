@@ -83,10 +83,14 @@ export function NoteFormDialog({
       if (note) {
         form.reset({ professional_id: note.professional_id, content: note.content })
       } else {
-        form.reset({ professional_id: '', content: '' })
+        const currentProfessional = professionals?.find((p: any) => p.user_id === user?.id)
+        form.reset({
+          professional_id: currentProfessional ? currentProfessional.id : '',
+          content: '',
+        })
       }
     }
-  }, [open, note, form])
+  }, [open, note, form, professionals, user])
 
   const applyTemplate = (templateHtml: string) => {
     const current = form.getValues('content')
@@ -252,7 +256,7 @@ export function NoteFormDialog({
               <Button
                 type="submit"
                 className="bg-success text-success-foreground hover:bg-success/90 transition-colors duration-200 rounded-lg shadow-subtle"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (!note && !patientId)}
               >
                 {isSubmitting ? 'Salvando...' : 'Salvar'}
               </Button>
