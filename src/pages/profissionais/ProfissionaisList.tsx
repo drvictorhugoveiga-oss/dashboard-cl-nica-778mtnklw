@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getProfessionals, deleteProfessional } from '@/services/professionals'
 import { useRealtime } from '@/hooks/use-realtime'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
 import { Button } from '@/components/ui/button'
 import { Plus, Filter, User } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -59,8 +60,13 @@ export function ProfissionaisList({ selectedProfId, onSelectProf }: Props) {
         className: 'bg-success text-success-foreground',
         duration: 3000,
       })
-    } catch {
-      toast({ title: 'Erro ao deletar profissional', variant: 'destructive', duration: 3000 })
+    } catch (err: unknown) {
+      toast({
+        title: 'Erro ao deletar',
+        description: getErrorMessage(err) || 'Não foi possível deletar o profissional.',
+        variant: 'destructive',
+        duration: 5000,
+      })
     }
   }
 
