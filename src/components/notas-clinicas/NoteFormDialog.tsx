@@ -105,10 +105,10 @@ export function NoteFormDialog({
     try {
       if (note) {
         await updatePatientNote(note.id, values)
-        toast({ title: 'Nota atualizada com sucesso', duration: 3000 })
+        toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       } else {
         await createPatientNote({ ...values, patient_id: patientId, created_by: user.id })
-        toast({ title: 'Nota criada com sucesso', duration: 3000 })
+        toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       }
       onSuccess()
       onOpenChange(false)
@@ -119,7 +119,11 @@ export function NoteFormDialog({
           form.setError(field as any, { type: 'manual', message })
         })
       } else {
-        toast({ title: 'Erro ao salvar nota', variant: 'destructive', duration: 3000 })
+        toast({
+          title: 'Erro ao salvar nota. Por favor, tente novamente.',
+          variant: 'destructive',
+          duration: 3000,
+        })
       }
     } finally {
       setIsSubmitting(false)
