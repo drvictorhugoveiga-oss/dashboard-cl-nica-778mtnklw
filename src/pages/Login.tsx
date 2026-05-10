@@ -122,13 +122,6 @@ export default function Login() {
           </Button>
         </CardFooter>
       </Card>
-
-      <div className="fixed bottom-4 right-4 bg-background border p-4 rounded-lg shadow-lg text-sm max-w-xs z-50">
-        <p className="font-bold mb-2">Credenciais de Teste:</p>
-        <p>Email: admin@clinica.com</p>
-        <p>Senha: senha123456</p>
-        <p>Role: admin</p>
-      </div>
     </div>
   )
 }
