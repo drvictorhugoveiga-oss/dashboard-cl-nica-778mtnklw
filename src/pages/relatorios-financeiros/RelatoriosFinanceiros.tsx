@@ -19,14 +19,14 @@ import { ChartsSection } from './ChartsSection'
 import { TablesSection } from './TablesSection'
 
 export function RelatoriosFinanceiros() {
-  const { user } = useAuth()
+  const { usuario } = useAuth()
   const [period, setPeriod] = useState<Period>('this_month')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
 
   const { computed, loading, error, refetch } = useFinancialData(period, customStart, customEnd)
 
-  if (user?.role !== 'admin') {
+  if (usuario?.role !== 'admin' && usuario?.role_name !== 'admin') {
     return <Navigate to="/" replace />
   }
 

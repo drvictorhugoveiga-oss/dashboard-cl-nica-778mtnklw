@@ -10,8 +10,8 @@ import { useAuth } from '@/hooks/use-auth'
 
 export default function Index() {
   const { data, isLoading, handleRenew } = useDashboardData()
-  const { user } = useAuth()
-  const isAdmin = user?.role === 'admin'
+  const { usuario } = useAuth()
+  const isAdmin = usuario?.role === 'admin' || usuario?.role_name === 'admin'
 
   return (
     <div className="flex flex-col gap-6">

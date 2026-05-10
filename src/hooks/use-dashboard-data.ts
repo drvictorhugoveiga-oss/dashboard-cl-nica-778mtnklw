@@ -87,13 +87,11 @@ export function useDashboardData() {
         pb.collection('professional_costs').getFullList({ expand: 'professional_id,plan_id' }),
         pb.collection('plans').getFullList(),
         pb.collection('operational_costs').getFullList(),
-        pb
-          .collection('reminders')
-          .getFullList({
-            filter: 'status = "pending"',
-            expand: 'patient_id',
-            sort: 'scheduled_date',
-          }),
+        pb.collection('reminders').getFullList({
+          filter: 'status = "pending"',
+          expand: 'patient_id',
+          sort: 'scheduled_date',
+        }),
       ])
 
       const activePatients = patients.filter((p) => p.status !== 'inactive')
