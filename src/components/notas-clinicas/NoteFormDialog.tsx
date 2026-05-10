@@ -6,7 +6,7 @@ import { AlertCircle, Check, FileText } from 'lucide-react'
 
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
-import { extractFieldErrors } from '@/lib/pocketbase/errors'
+import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
 import { cn } from '@/lib/utils'
 import { createPatientNote, updatePatientNote } from '@/services/patient_notes'
 
@@ -43,6 +43,7 @@ import {
 import { RichTextEditor } from './RichTextEditor'
 
 const formSchema = z.object({
+  patient_id: z.string().min(1, 'Paciente é obrigatório'),
   professional_id: z.string().min(1, 'Profissional é obrigatório'),
   content: z.string().refine((val) => {
     const text = val
@@ -65,7 +66,7 @@ export function NoteFormDialog({
   onOpenChange,
   note,
   patientId,
-  patientName,
+  patients,
   professionals,
   onSuccess,
 }: any) {
@@ -75,22 +76,27 @@ export function NoteFormDialog({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { professional_id: '', content: '' },
+    defaultValues: { patient_id: '', professional_id: '', content: '' },
   })
 
   useEffect(() => {
     if (open) {
       if (note) {
-        form.reset({ professional_id: note.professional_id, content: note.content })
+        form.reset({
+          patient_id: note.patient_id,
+          professional_id: note.professional_id,
+          content: note.content,
+        })
       } else {
         const currentProfessional = professionals?.find((p: any) => p.user_id === user?.id)
         form.reset({
+          patient_id: patientId || '',
           professional_id: currentProfessional ? currentProfessional.id : '',
           content: '',
         })
       }
     }
-  }, [open, note, form, professionals, user])
+  }, [open, note, form, professionals, user, patientId])
 
   const applyTemplate = (templateHtml: string) => {
     const current = form.getValues('content')
@@ -111,7 +117,7 @@ export function NoteFormDialog({
         await updatePatientNote(note.id, values)
         toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       } else {
-        await createPatientNote({ ...values, patient_id: patientId, created_by: user.id })
+        await createPatientNote({ ...values, created_by: user?.id })
         toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       }
       onSuccess()
@@ -122,11 +128,19 @@ export function NoteFormDialog({
         Object.entries(fieldErrors).forEach(([field, message]) => {
           form.setError(field as any, { type: 'manual', message })
         })
+        toast({
+          title: 'Campos inválidos',
+          description: 'Verifique os campos destacados e tente novamente.',
+          variant: 'destructive',
+          duration: 4000,
+        })
       } else {
         toast({
-          title: 'Erro ao salvar nota. Por favor, tente novamente.',
+          title: 'Erro ao salvar nota',
+          description:
+            getErrorMessage(error) || 'Ocorreu um erro inesperado. Por favor, tente novamente.',
           variant: 'destructive',
-          duration: 3000,
+          duration: 4000,
         })
       }
     } finally {
@@ -163,14 +177,52 @@ export function NoteFormDialog({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <FormLabel className="text-sm text-gray-600">Paciente</FormLabel>
-                <Input
-                  value={patientName}
-                  readOnly
-                  className="bg-gray-100 text-gray-600 border-gray-200 rounded-lg"
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="patient_id"
+                render={({ field, fieldState }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel className="text-sm text-gray-600">Paciente</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                      disabled={!!note}
+                    >
+                      <FormControl>
+                        <div className="relative">
+                          <SelectTrigger
+                            className={cn(
+                              'rounded-lg border-gray-200 pr-10',
+                              fieldState.error
+                                ? 'border-destructive text-destructive focus:ring-destructive'
+                                : fieldState.isDirty && !fieldState.invalid
+                                  ? 'border-success text-success focus:ring-success'
+                                  : '',
+                            )}
+                          >
+                            <SelectValue placeholder="Selecione o paciente" />
+                          </SelectTrigger>
+                          {fieldState.error && (
+                            <AlertCircle className="absolute right-8 top-2.5 h-4 w-4 text-destructive pointer-events-none" />
+                          )}
+                          {fieldState.isDirty && !fieldState.invalid && (
+                            <Check className="absolute right-8 top-2.5 h-4 w-4 text-success pointer-events-none" />
+                          )}
+                        </div>
+                      </FormControl>
+                      <SelectContent className="rounded-lg border-gray-200 max-h-[300px]">
+                        {patients?.map((p: any) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs text-destructive" />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="professional_id"
@@ -256,7 +308,7 @@ export function NoteFormDialog({
               <Button
                 type="submit"
                 className="bg-success text-success-foreground hover:bg-success/90 transition-colors duration-200 rounded-lg shadow-subtle"
-                disabled={isSubmitting || (!note && !patientId)}
+                disabled={isSubmitting}
               >
                 {isSubmitting ? 'Salvando...' : 'Salvar'}
               </Button>

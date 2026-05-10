@@ -111,17 +111,15 @@ export default function NotasClinicas() {
             onSelect={setSelectedPatientId}
           />
 
-          {selectedPatientId && (
-            <Button
-              onClick={() => {
-                setSelectedNote(null)
-                setIsFormOpen(true)
-              }}
-              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-subtle transition-all duration-200 ease-out rounded-lg whitespace-nowrap"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Nova Nota
-            </Button>
-          )}
+          <Button
+            onClick={() => {
+              setSelectedNote(null)
+              setIsFormOpen(true)
+            }}
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-subtle transition-all duration-200 ease-out rounded-lg whitespace-nowrap"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Nova Nota
+          </Button>
         </div>
       </div>
 
@@ -165,7 +163,7 @@ export default function NotasClinicas() {
               ? 'Nenhum resultado corresponde à sua busca.'
               : 'Este paciente ainda não possui nenhuma observação clínica registrada.'}
           </p>
-          {selectedPatientId && !searchTerm && (
+          {!searchTerm && (
             <Button
               onClick={() => {
                 setSelectedNote(null)
@@ -200,7 +198,7 @@ export default function NotasClinicas() {
         onOpenChange={setIsFormOpen}
         note={selectedNote}
         patientId={selectedNote ? selectedNote.patient_id : selectedPatientId}
-        patientName={selectedNote ? selectedNote.expand?.patient_id?.name : selectedPatientName}
+        patients={patients}
         professionals={professionals}
         onSuccess={() => loadNotes()}
       />
