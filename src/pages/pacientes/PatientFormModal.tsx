@@ -38,6 +38,7 @@ const formSchema = z.object({
     .refine((val) => new Date(val) < new Date(), 'Deve ser no passado'),
   plan_id: z.string().min(1, 'Plano é obrigatório'),
   status: z.enum(['active', 'inactive', 'paused']),
+  gender: z.enum(['male', 'female', 'other']).optional(),
   contract_start: z.string().min(1, 'Data de início é obrigatória'),
   contract_end: z.string().optional(),
 })
@@ -77,6 +78,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
         birth_date: patient.birth_date ? patient.birth_date.substring(0, 10) : '',
         plan_id: patient.plan_id || '',
         status: patient.status,
+        gender: patient.gender,
         contract_start: patient.contract_start ? patient.contract_start.substring(0, 10) : '',
         contract_end: patient.contract_end ? patient.contract_end.substring(0, 10) : '',
       })
@@ -88,6 +90,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
         birth_date: '',
         plan_id: '',
         status: 'active',
+        gender: undefined,
         contract_start: format(new Date(), 'yyyy-MM-dd'),
         contract_end: '',
       })
@@ -274,6 +277,28 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                         <SelectItem value="active">Ativo</SelectItem>
                         <SelectItem value="inactive">Inativo</SelectItem>
                         <SelectItem value="paused">Pausado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs text-destructive" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Gênero</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className={getInputClass('gender')}>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="male">Masculino</SelectItem>
+                        <SelectItem value="female">Feminino</SelectItem>
+                        <SelectItem value="other">Outro</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage className="text-xs text-destructive" />

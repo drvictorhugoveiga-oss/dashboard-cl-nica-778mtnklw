@@ -6,109 +6,57 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableFooter,
 } from '@/components/ui/table'
 import { formatBRL } from './SummaryCards'
+import { cn } from '@/lib/utils'
 
 export function TablesSection({ data }: { data: any }) {
   if (!data) return null
 
-  const totalProfCost = data.professionals.reduce((acc: number, p: any) => acc + p.totalCost, 0)
-  const totalPlanQty = data.plans.reduce((acc: number, p: any) => acc + p.quantity, 0)
-  const totalPlanRev = data.plans.reduce((acc: number, p: any) => acc + p.totalRev, 0)
-
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Custo por Profissional</CardTitle>
+          <CardTitle>Detalhamento Financeiro por Paciente</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
-            <TableHeader className="table-header-custom">
+            <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableHead>Profissional</TableHead>
-                <TableHead>Especialidade</TableHead>
-                <TableHead className="text-right">Custo Mensal</TableHead>
-                <TableHead className="text-right">Total no Período</TableHead>
+                <TableHead>Paciente</TableHead>
+                <TableHead>Plano Ativo</TableHead>
+                <TableHead className="text-right">Meses Ativos</TableHead>
+                <TableHead className="text-right">Valor do Plano (Ganho)</TableHead>
+                <TableHead className="text-right">Custos Profissionais (Perda)</TableHead>
+                <TableHead className="text-right">Lucro Líquido</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.professionals.map((p: any, i: number) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell className="capitalize">{p.specialty}</TableCell>
-                  <TableCell className="text-right">{formatBRL(p.monthlyCost)}</TableCell>
-                  <TableCell className="text-right">{formatBRL(p.totalCost)}</TableCell>
+              {data.patientDetails.map((p: any) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{p.patientName}</TableCell>
+                  <TableCell>{p.planName}</TableCell>
+                  <TableCell className="text-right">{p.activeMonths}</TableCell>
+                  <TableCell className="text-right text-success">{formatBRL(p.gain)}</TableCell>
+                  <TableCell className="text-right text-destructive">{formatBRL(p.loss)}</TableCell>
+                  <TableCell
+                    className={cn(
+                      'text-right font-bold',
+                      p.netProfit >= 0 ? 'text-success' : 'text-destructive',
+                    )}
+                  >
+                    {formatBRL(p.netProfit)}
+                  </TableCell>
                 </TableRow>
               ))}
-              {data.professionals.length === 0 && (
+              {data.patientDetails.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
-                    Nenhum custo registrado
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    Nenhum dado para o período
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
-            {data.professionals.length > 0 && (
-              <TableFooter>
-                <TableRow>
-                  <TableCell colSpan={3} className="font-bold">
-                    Total
-                  </TableCell>
-                  <TableCell className="text-right font-bold text-destructive">
-                    {formatBRL(totalProfCost)}
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
-            )}
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Pacientes por Plano</CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader className="table-header-custom">
-              <TableRow>
-                <TableHead>Plano</TableHead>
-                <TableHead className="text-center">Quantidade</TableHead>
-                <TableHead className="text-right">Receita Mensal</TableHead>
-                <TableHead className="text-right">Total no Período</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.plans.map((p: any, i: number) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell className="text-center">{p.quantity}</TableCell>
-                  <TableCell className="text-right">{formatBRL(p.monthlyRev)}</TableCell>
-                  <TableCell className="text-right">{formatBRL(p.totalRev)}</TableCell>
-                </TableRow>
-              ))}
-              {data.plans.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
-                    Nenhum paciente registrado
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-            {data.plans.length > 0 && (
-              <TableFooter>
-                <TableRow>
-                  <TableCell className="font-bold">Total</TableCell>
-                  <TableCell className="text-center font-bold">{totalPlanQty}</TableCell>
-                  <TableCell className="text-right">-</TableCell>
-                  <TableCell className="text-right font-bold text-primary">
-                    {formatBRL(totalPlanRev)}
-                  </TableCell>
-                </TableRow>
-              </TableFooter>
-            )}
           </Table>
         </CardContent>
       </Card>

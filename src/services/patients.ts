@@ -12,6 +12,7 @@ export interface Patient {
   status: 'active' | 'inactive' | 'paused'
   contract_start?: string
   contract_end?: string
+  gender?: 'male' | 'female' | 'other'
   user_id?: string
   created: string
   updated: string
@@ -27,6 +28,7 @@ export type PatientFormData = {
   birth_date: string
   plan_id: string
   status: 'active' | 'inactive' | 'paused'
+  gender?: 'male' | 'female' | 'other'
   contract_start: string
   contract_end?: string
 }

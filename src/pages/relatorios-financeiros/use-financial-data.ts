@@ -1,13 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { startOfMonth, endOfMonth, subMonths, eachMonthOfInterval } from 'date-fns'
 import pb from '@/lib/pocketbase/client'
-import type { Patient } from '@/services/patients'
-import type { ProfessionalCost } from '@/services/professional_costs'
 
 export type Period = 'this_month' | 'last_3' | 'last_6' | 'last_12' | 'custom'
 
 export function useFinancialData(period: Period, customStart?: string, customEnd?: string) {
-  const [data, setData] = useState<{ patients: Patient[]; costs: ProfessionalCost[] } | null>(null)
+  const [data, setData] = useState<{ patients: any[]; costs: any[]; opCosts: any[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
@@ -15,13 +13,22 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
     try {
       setLoading(true)
       setError(null)
-      const [patientsRes, costsRes] = await Promise.all([
-        pb.collection('patients').getFullList<Patient>({ expand: 'plan_id' }),
-        pb
-          .collection('professional_costs')
-          .getFullList<ProfessionalCost>({ expand: 'professional_id,plan_id' }),
-      ])
-      setData({ patients: patientsRes, costs: costsRes })
+      try {
+        const res = await pb.send('/backend/v1/financial-reports', { method: 'GET' })
+        setData({
+          patients: res.patients || [],
+          costs: res.professional_costs || res.costs || [],
+          opCosts: res.operational_costs || [],
+        })
+      } catch (err) {
+        // Fallback
+        const [patientsRes, costsRes, opCostsRes] = await Promise.all([
+          pb.collection('patients').getFullList({ expand: 'plan_id' }),
+          pb.collection('professional_costs').getFullList({ expand: 'professional_id,plan_id' }),
+          pb.collection('operational_costs').getFullList(),
+        ])
+        setData({ patients: patientsRes, costs: costsRes, opCosts: opCostsRes })
+      }
     } catch (err) {
       setError(err as Error)
     } finally {
@@ -48,103 +55,78 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
     }
 
     const months = eachMonthOfInterval({ start, end })
-    const numMonths = Math.max(months.length, 1)
 
-    let totalRevenue = 0
-    let totalCost = 0
-    const timeline: any[] = []
-    const plansMap = new Map<string, any>()
-    const profsMap = new Map<string, any>()
-
-    months.forEach((m) => {
-      const mStart = startOfMonth(m)
-      const mEnd = endOfMonth(m)
-      let mRev = 0
-      let mCost = 0
-
-      data.patients.forEach((p) => {
+    const patientDetails = data.patients
+      .map((p) => {
         const plan = p.expand?.plan_id
-        if (!plan) return
         const pStart = p.contract_start ? new Date(p.contract_start.replace(' ', 'T')) : null
         const pEnd = p.contract_end ? new Date(p.contract_end.replace(' ', 'T')) : null
-        if (p.status !== 'inactive' && (!pStart || pStart <= mEnd) && (!pEnd || pEnd >= mStart)) {
-          mRev += plan.price
-          const ps = plansMap.get(plan.id) || {
-            name: plan.name,
-            quantity: 0,
-            monthlyRev: 0,
-            totalRev: 0,
+
+        let activeMonths = 0
+        months.forEach((m) => {
+          const mStart = startOfMonth(m)
+          const mEnd = endOfMonth(m)
+          if (p.status !== 'inactive' && (!pStart || pStart <= mEnd) && (!pEnd || pEnd >= mStart)) {
+            activeMonths++
           }
-          ps.totalRev += plan.price
-          plansMap.set(plan.id, ps)
+        })
+
+        const gain = (plan?.price || 0) * activeMonths
+        const monthlyProfCost = data.costs
+          .filter((c) => c.plan_id === plan?.id)
+          .reduce((sum, c) => sum + c.cost_per_month, 0)
+        const loss = monthlyProfCost * activeMonths
+
+        return {
+          id: p.id,
+          patientName: p.name,
+          planName: plan?.name || 'Sem Plano',
+          activeMonths,
+          gain,
+          loss,
+          netProfit: gain - loss,
         }
       })
+      .filter((p) => p.activeMonths > 0)
+      .sort((a, b) => b.netProfit - a.netProfit)
 
-      data.costs.forEach((c) => {
-        mCost += c.cost_per_month
-      })
-
-      const label = `${['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][m.getMonth()]}/${m.getFullYear().toString().slice(2)}`
-      timeline.push({ month: label, revenue: mRev, costs: mCost })
-      totalRevenue += mRev
-      totalCost += mCost
-    })
-
-    data.costs.forEach((c) => {
-      const prof = c.expand?.professional_id
-      if (prof) {
-        const ps = profsMap.get(prof.id) || {
-          name: prof.name,
-          specialty: prof.specialty,
-          monthlyCost: 0,
-          totalCost: 0,
-        }
-        ps.monthlyCost += c.cost_per_month
-        ps.totalCost += c.cost_per_month * numMonths
-        profsMap.set(prof.id, ps)
+    const profitPerPlanMap = new Map<string, number>()
+    patientDetails.forEach((p) => {
+      if (p.planName !== 'Sem Plano') {
+        profitPerPlanMap.set(p.planName, (profitPerPlanMap.get(p.planName) || 0) + p.netProfit)
       }
     })
 
-    const lastMonthStart = startOfMonth(months[months.length - 1])
-    const lastMonthEnd = endOfMonth(months[months.length - 1])
-    const currentCounts = new Map<string, number>()
+    const colors = ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#ec4899', '#eab308']
+    const profitPerPlan = Array.from(profitPerPlanMap.entries()).map(([name, value], i) => ({
+      name,
+      value: Math.max(0, value),
+      fill: colors[i % colors.length],
+    }))
 
-    data.patients.forEach((p) => {
-      const plan = p.expand?.plan_id
-      if (!plan) return
-      const pStart = p.contract_start ? new Date(p.contract_start.replace(' ', 'T')) : null
-      const pEnd = p.contract_end ? new Date(p.contract_end.replace(' ', 'T')) : null
-      if (
-        p.status !== 'inactive' &&
-        (!pStart || pStart <= lastMonthEnd) &&
-        (!pEnd || pEnd >= lastMonthStart)
-      ) {
-        currentCounts.set(plan.id, (currentCounts.get(plan.id) || 0) + 1)
-      }
+    const filteredOpCosts = data.opCosts.filter((c) => {
+      const d = new Date(c.date)
+      return d >= start && d <= end
     })
 
-    const plans = Array.from(plansMap.entries())
-      .map(([id, ps]) => ({
-        ...ps,
-        quantity: currentCounts.get(id) || 0,
-        monthlyRev: ps.totalRev / numMonths,
-      }))
-      .sort((a, b) => b.totalRev - a.totalRev)
+    const totalGains = patientDetails.reduce((sum, p) => sum + p.gain, 0)
+    const totalProfLosses = patientDetails.reduce((sum, p) => sum + p.loss, 0)
+    const totalOpLosses = filteredOpCosts.reduce((sum, c) => sum + c.cost_value, 0)
+    const totalLosses = totalProfLosses + totalOpLosses
 
-    const colors = ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#ec4899']
+    const gainsVsLosses = [
+      { name: 'Ganhos', value: totalGains, fill: '#22c55e' },
+      { name: 'Perdas', value: totalLosses, fill: '#ef4444' },
+    ]
+
     return {
-      totalRevenue,
-      totalCost,
-      netMargin: totalRevenue > 0 ? ((totalRevenue - totalCost) / totalRevenue) * 100 : 0,
-      netProfit: totalRevenue - totalCost,
-      timeline,
-      plans,
-      professionals: Array.from(profsMap.values()).sort((a, b) => b.totalCost - a.totalCost),
-      pieData: plans.map((p, i) => ({
-        name: p.name,
-        value: p.totalRev,
-        fill: colors[i % colors.length],
-      })),
+      patientDetails,
+      profitPerPlan,
+      gainsVsLosses,
+      totalRevenue: totalGains,
+      totalCost: totalLosses,
+      netMargin: totalGains > 0 ? ((totalGains - totalLosses) / totalGains) * 100 : 0,
+      netProfit: totalGains - totalLosses,
     }
   }, [data, period, customStart, customEnd])
 

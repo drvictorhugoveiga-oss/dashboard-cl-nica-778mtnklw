@@ -104,6 +104,17 @@ export function PatientDetailsModal({ isOpen, onClose, patient }: Props) {
 
             <span className="font-semibold text-muted-foreground">Status:</span>
             <span className="col-span-2">{getStatusBadge(patient.status)}</span>
+
+            <span className="font-semibold text-muted-foreground">Gênero:</span>
+            <span className="col-span-2 capitalize">
+              {patient.gender === 'male'
+                ? 'Masculino'
+                : patient.gender === 'female'
+                  ? 'Feminino'
+                  : patient.gender === 'other'
+                    ? 'Outro'
+                    : '-'}
+            </span>
           </div>
         </div>
         <DialogFooter className="border-t border-border pt-4">
