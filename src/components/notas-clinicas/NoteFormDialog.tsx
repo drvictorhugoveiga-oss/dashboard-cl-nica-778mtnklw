@@ -45,13 +45,7 @@ import { RichTextEditor } from './RichTextEditor'
 const formSchema = z.object({
   patient_id: z.string().min(1, 'Paciente é obrigatório'),
   professional_id: z.string().min(1, 'Profissional é obrigatório'),
-  content: z.string().refine((val) => {
-    const text = val
-      .replace(/<[^>]*>?/gm, '')
-      .replace(/&nbsp;/g, ' ')
-      .trim()
-    return text.length >= 10
-  }, 'O conteúdo deve ter pelo menos 10 caracteres (texto visível)'),
+  content: z.string().min(1, 'O conteúdo é obrigatório'),
 })
 
 const TEMPLATES = {
@@ -114,10 +108,19 @@ export function NoteFormDialog({
     setIsSubmitting(true)
     try {
       if (note) {
-        await updatePatientNote(note.id, values)
+        await updatePatientNote(note.id, {
+          patient_id: values.patient_id,
+          professional_id: values.professional_id,
+          content: values.content,
+        })
         toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       } else {
-        await createPatientNote({ ...values, created_by: user?.id })
+        await createPatientNote({
+          patient_id: values.patient_id,
+          professional_id: values.professional_id,
+          content: values.content,
+          created_by: user?.id,
+        })
         toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       }
       onSuccess()
