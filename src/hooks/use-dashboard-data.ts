@@ -3,6 +3,7 @@ import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
+import { useAuth } from '@/hooks/use-auth'
 import {
   differenceInYears,
   format,
@@ -59,9 +60,13 @@ export interface DashboardData {
   genderDistribution: { name: string; value: number; fill: string }[]
   ageDistribution: { name: string; count: number; fill: string }[]
   financialTimeline: { month: string; revenue: number; costs: number }[]
+  monthlyConsultations: number
+  consultationsByProfessional: { name: string; count: number }[]
 }
 
 export function useDashboardData() {
+  const { usuario } = useAuth()
+  const isAdmin = usuario?.role === 'admin' || usuario?.role_name === 'admin'
   const [data, setData] = useState<DashboardData>({
     grossRevenue: 0,
     professionalCosts: 0,
@@ -76,21 +81,42 @@ export function useDashboardData() {
     genderDistribution: [],
     ageDistribution: [],
     financialTimeline: [],
+    monthlyConsultations: 0,
+    consultationsByProfessional: [],
   })
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
   const fetchData = useCallback(async () => {
     try {
-      const [patients, costs, plans, opCosts, reminders] = await Promise.all([
+      let costsPromise = Promise.resolve<any[]>([])
+      let opCostsPromise = Promise.resolve<any[]>([])
+
+      if (isAdmin) {
+        costsPromise = pb
+          .collection('professional_costs')
+          .getFullList({ expand: 'professional_id,plan_id' })
+        opCostsPromise = pb.collection('operational_costs').getFullList()
+      }
+
+      const thisMonth = new Date()
+      thisMonth.setDate(1)
+      thisMonth.setHours(0, 0, 0, 0)
+      const thisMonthStr = thisMonth.toISOString().replace('T', ' ')
+
+      const [patients, costs, plans, opCosts, reminders, notes] = await Promise.all([
         pb.collection('patients').getFullList({ expand: 'plan_id', sort: '-created' }),
-        pb.collection('professional_costs').getFullList({ expand: 'professional_id,plan_id' }),
+        costsPromise,
         pb.collection('plans').getFullList(),
-        pb.collection('operational_costs').getFullList(),
+        opCostsPromise,
         pb.collection('reminders').getFullList({
           filter: 'status = "pending"',
           expand: 'patient_id',
           sort: 'scheduled_date',
+        }),
+        pb.collection('patient_notes').getFullList({
+          filter: `created >= "${thisMonthStr}"`,
+          expand: 'professional_id',
         }),
       ])
 
@@ -142,15 +168,14 @@ export function useDashboardData() {
         { name: 'Outros', value: genderCounts.other, fill: '#a855f7' },
       ].filter((x) => x.value > 0)
 
-      const ageGroups = { '0-18': 0, '19-30': 0, '31-50': 0, '51-70': 0, '71+': 0 }
+      const ageGroups = { '0-18': 0, '19-35': 0, '36-50': 0, '51+': 0 }
       activePatients.forEach((p) => {
         if (p.birth_date) {
           const age = differenceInYears(new Date(), new Date(p.birth_date))
           if (age <= 18) ageGroups['0-18']++
-          else if (age <= 30) ageGroups['19-30']++
-          else if (age <= 50) ageGroups['31-50']++
-          else if (age <= 70) ageGroups['51-70']++
-          else ageGroups['71+']++
+          else if (age <= 35) ageGroups['19-35']++
+          else if (age <= 50) ageGroups['36-50']++
+          else ageGroups['51+']++
         }
       })
       const ageDistribution = Object.entries(ageGroups).map(([name, count]) => ({
@@ -202,22 +227,19 @@ export function useDashboardData() {
       const birthdays = patients
         .filter((p) => {
           if (!p.birth_date) return false
-          const d = new Date(p.birth_date)
-          d.setFullYear(todayZero.getFullYear())
-          if (d < todayZero) d.setFullYear(todayZero.getFullYear() + 1)
-          return d <= in30Days
+          const [year, month, day] = p.birth_date.split(' ')[0].split('-')
+          return parseInt(month, 10) - 1 === currentMonth
         })
         .map((p) => {
-          const d = new Date(p.birth_date)
-          d.setFullYear(todayZero.getFullYear())
-          if (d < todayZero) d.setFullYear(todayZero.getFullYear() + 1)
+          const [year, month, day] = p.birth_date!.split(' ')[0].split('-')
+          const d = new Date(todayZero.getFullYear(), parseInt(month, 10) - 1, parseInt(day, 10))
           return {
             id: p.id,
             name: p.name,
             date: format(d, 'dd/MM'),
             plan: p.expand?.plan_id?.name || 'Sem plano',
-            isCurrentMonth: d.getMonth() === currentMonth,
-            day: d.getTime(),
+            isCurrentMonth: true,
+            day: d.getDate(),
           }
         })
         .sort((a, b) => a.day - b.day)
@@ -251,6 +273,25 @@ export function useDashboardData() {
         patient_name: r.expand?.patient_id?.name,
       }))
 
+      const monthlyConsultations = notes.length
+      const professionalCounts: Record<string, number> = {}
+      const professionalNames: Record<string, string> = {}
+
+      notes.forEach((note) => {
+        const profId = note.professional_id
+        professionalCounts[profId] = (professionalCounts[profId] || 0) + 1
+        if (note.expand?.professional_id) {
+          professionalNames[profId] = note.expand.professional_id.name
+        }
+      })
+
+      const consultationsByProfessional = Object.keys(professionalCounts)
+        .map((profId) => ({
+          name: professionalNames[profId] || 'Desconhecido',
+          count: professionalCounts[profId],
+        }))
+        .sort((a, b) => b.count - a.count)
+
       setData({
         grossRevenue,
         professionalCosts,
@@ -265,6 +306,8 @@ export function useDashboardData() {
         genderDistribution,
         ageDistribution,
         financialTimeline,
+        monthlyConsultations,
+        consultationsByProfessional,
       })
     } catch (err) {
       console.error(err)
@@ -276,17 +319,18 @@ export function useDashboardData() {
     } finally {
       setIsLoading(false)
     }
-  }, [toast])
+  }, [toast, isAdmin])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
 
   useRealtime('patients', fetchData)
-  useRealtime('professional_costs', fetchData)
-  useRealtime('operational_costs', fetchData)
   useRealtime('reminders', fetchData)
+  useRealtime('patient_notes', fetchData)
   useRealtime('plans', fetchData)
+  useRealtime('professional_costs', fetchData, isAdmin)
+  useRealtime('operational_costs', fetchData, isAdmin)
 
   const handleRenew = async (patientId: string, planId: string) => {
     try {

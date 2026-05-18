@@ -154,7 +154,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (isAdmin) return true
 
     if (usuario.role === 'staff' || usuario.role_name === 'staff') {
-      if (resource === 'settings') return false
+      if (
+        resource === 'settings' ||
+        resource === 'plans' ||
+        resource === 'professionals' ||
+        resource === 'financial_reports'
+      ) {
+        return false
+      }
       return true
     }
 
