@@ -131,19 +131,33 @@ export function NoteFormDialog({
         Object.entries(fieldErrors).forEach(([field, message]) => {
           form.setError(field as any, { type: 'manual', message })
         })
+
+        const errorMessages = Object.entries(fieldErrors)
+          .map(([field, msg]) => {
+            const fieldNameMap: Record<string, string> = {
+              patient_id: 'Paciente',
+              professional_id: 'Profissional',
+              content: 'Conteúdo',
+              created_by: 'Criador',
+            }
+            const displayName = fieldNameMap[field] || field
+            return `${displayName}: ${msg}`
+          })
+          .join(' | ')
+
         toast({
-          title: 'Campos inválidos',
-          description: 'Verifique os campos destacados e tente novamente.',
+          title: 'Erro de validação',
+          description: errorMessages,
           variant: 'destructive',
-          duration: 4000,
+          duration: 5000,
         })
       } else {
         toast({
-          title: 'Erro ao salvar nota',
+          title: 'Erro de comunicação',
           description:
-            getErrorMessage(error) || 'Ocorreu um erro inesperado. Por favor, tente novamente.',
+            getErrorMessage(error) || 'Ocorreu um erro de conexão. Por favor, tente novamente.',
           variant: 'destructive',
-          duration: 4000,
+          duration: 5000,
         })
       }
     } finally {
