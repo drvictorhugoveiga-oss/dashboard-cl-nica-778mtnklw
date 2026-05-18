@@ -113,7 +113,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     })
 
+    const handleAuthError = () => {
+      pb.authStore.clear()
+      setUsuario(null)
+      setPermissions([])
+      window.location.href = '/login'
+    }
+
+    window.addEventListener('pb-auth-error', handleAuthError)
+
     return () => {
+      window.removeEventListener('pb-auth-error', handleAuthError)
       unsubscribe()
     }
   }, [])

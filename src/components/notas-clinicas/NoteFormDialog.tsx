@@ -67,6 +67,7 @@ export function NoteFormDialog({
 }: any) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const [currentNoteId, setCurrentNoteId] = useState<string | undefined>(undefined)
   const { user } = useAuth()
   const { toast } = useToast()
@@ -87,6 +88,7 @@ export function NoteFormDialog({
     if (open) {
       setCurrentNoteId(note?.id)
       setSaveStatus('idle')
+      setLastSavedAt(note?.updated ? new Date(note.updated) : null)
       if (note) {
         form.reset({
           patient_id: note.patient_id,
@@ -120,7 +122,10 @@ export function NoteFormDialog({
     if (!open) return
 
     const { patient_id, professional_id, content } = watchedValues
-    if (!patient_id || !professional_id || !content) return
+
+    const isEmptyContent =
+      !content || content.trim() === '' || content === '<br>' || content === '<p><br></p>'
+    if (!patient_id || !professional_id || isEmptyContent) return
     if (!user?.id) return
 
     const hasChanged =
@@ -136,42 +141,46 @@ export function NoteFormDialog({
       if (!pb.authStore.isValid || !user?.id) {
         setSaveStatus('error')
         toast({
-          title: 'Erro de comunicação',
-          description: 'Usuário não autenticado. Por favor, faça login novamente.',
+          title: 'Authentication Error - Please Login',
+          description: 'Sua sessão expirou. Por favor, faça login novamente.',
           variant: 'destructive',
         })
+        window.dispatchEvent(new CustomEvent('pb-auth-error'))
         return
       }
 
       setSaveStatus('saving')
       try {
+        let updatedNote
         if (currentNoteId) {
-          await updatePatientNote(currentNoteId, {
+          updatedNote = await updatePatientNote(currentNoteId, {
             patient_id,
             professional_id,
             content,
             created_by: user.id,
           })
         } else {
-          const newNote = await createPatientNote({
+          updatedNote = await createPatientNote({
             patient_id,
             professional_id,
             content,
             created_by: user.id,
           })
-          setCurrentNoteId(newNote.id)
+          setCurrentNoteId(updatedNote.id)
         }
         lastSavedValues.current = { content, patient_id, professional_id }
         setSaveStatus('saved')
+        setLastSavedAt(updatedNote?.updated ? new Date(updatedNote.updated) : new Date())
         onSuccess?.()
       } catch (err: any) {
         setSaveStatus('error')
         if (err?.status === 401 || err?.status === 403) {
           toast({
-            title: 'Erro de comunicação',
-            description: 'Usuário não autenticado. Por favor, faça login novamente.',
+            title: 'Authentication Error - Please Login',
+            description: 'Sua sessão expirou. Por favor, faça login novamente.',
             variant: 'destructive',
           })
+          window.dispatchEvent(new CustomEvent('pb-auth-error'))
         } else {
           const fieldErrors = extractFieldErrors(err)
           if (Object.keys(fieldErrors).length > 0) {
@@ -202,10 +211,21 @@ export function NoteFormDialog({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!pb.authStore.isValid || !user?.id) {
       toast({
-        title: 'Erro de comunicação',
-        description: 'Usuário não autenticado. Por favor, faça login novamente.',
+        title: 'Authentication Error - Please Login',
+        description: 'Sua sessão expirou. Por favor, faça login novamente.',
         variant: 'destructive',
       })
+      window.dispatchEvent(new CustomEvent('pb-auth-error'))
+      return
+    }
+
+    const isEmptyContent =
+      !values.content ||
+      values.content.trim() === '' ||
+      values.content === '<br>' ||
+      values.content === '<p><br></p>'
+    if (isEmptyContent) {
+      form.setError('content', { type: 'manual', message: 'O conteúdo não pode estar vazio' })
       return
     }
 
@@ -233,10 +253,11 @@ export function NoteFormDialog({
     } catch (error: any) {
       if (error?.status === 401 || error?.status === 403) {
         toast({
-          title: 'Erro de comunicação',
-          description: 'Usuário não autenticado. Por favor, faça login novamente.',
+          title: 'Authentication Error - Please Login',
+          description: 'Sua sessão expirou. Por favor, faça login novamente.',
           variant: 'destructive',
         })
+        window.dispatchEvent(new CustomEvent('pb-auth-error'))
         setIsSubmitting(false)
         return
       }
@@ -415,12 +436,17 @@ export function NoteFormDialog({
                       )}
                       {saveStatus === 'saved' && (
                         <span className="text-success flex items-center">
-                          <Check className="w-3 h-3 mr-1" /> Todas as alterações salvas
+                          <Check className="w-3 h-3 mr-1" /> Salvo às{' '}
+                          {lastSavedAt?.toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                          })}
                         </span>
                       )}
                       {saveStatus === 'error' && (
                         <span className="text-destructive flex items-center">
-                          <AlertCircle className="w-3 h-3 mr-1" /> Erro ao salvar
+                          <AlertCircle className="w-3 h-3 mr-1" /> Erro ao salvar (Offline/Error)
                         </span>
                       )}
                     </div>
