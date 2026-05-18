@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -65,6 +65,8 @@ export function NoteFormDialog({
   onSuccess,
 }: any) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [currentNoteId, setCurrentNoteId] = useState<string | undefined>(undefined)
   const { user } = useAuth()
   const { toast } = useToast()
 
@@ -73,24 +75,91 @@ export function NoteFormDialog({
     defaultValues: { patient_id: '', professional_id: '', content: '' },
   })
 
+  const watchedValues = form.watch()
+  const lastSavedValues = useRef({
+    content: '',
+    patient_id: '',
+    professional_id: '',
+  })
+
   useEffect(() => {
     if (open) {
+      setCurrentNoteId(note?.id)
+      setSaveStatus('idle')
       if (note) {
         form.reset({
           patient_id: note.patient_id,
           professional_id: note.professional_id,
           content: note.content,
         })
+        lastSavedValues.current = {
+          patient_id: note.patient_id,
+          professional_id: note.professional_id,
+          content: note.content,
+        }
       } else {
         const currentProfessional = professionals?.find((p: any) => p.user_id === user?.id)
+        const initialProfessionalId = currentProfessional ? currentProfessional.id : ''
+        const initialPatientId = patientId || ''
         form.reset({
-          patient_id: patientId || '',
-          professional_id: currentProfessional ? currentProfessional.id : '',
+          patient_id: initialPatientId,
+          professional_id: initialProfessionalId,
           content: '',
         })
+        lastSavedValues.current = {
+          patient_id: initialPatientId,
+          professional_id: initialProfessionalId,
+          content: '',
+        }
       }
     }
   }, [open, note, form, professionals, user, patientId])
+
+  useEffect(() => {
+    if (!open) return
+
+    const { patient_id, professional_id, content } = watchedValues
+    if (!patient_id || !professional_id || !content) return
+    if (!user?.id) return
+
+    const hasChanged =
+      content !== lastSavedValues.current.content ||
+      patient_id !== lastSavedValues.current.patient_id ||
+      professional_id !== lastSavedValues.current.professional_id
+
+    if (!hasChanged) return
+
+    setSaveStatus('idle')
+
+    const timer = setTimeout(async () => {
+      setSaveStatus('saving')
+      try {
+        if (currentNoteId) {
+          await updatePatientNote(currentNoteId, {
+            patient_id,
+            professional_id,
+            content,
+          })
+        } else {
+          const newNote = await createPatientNote({
+            patient_id,
+            professional_id,
+            content,
+            created_by: user.id,
+          })
+          setCurrentNoteId(newNote.id)
+        }
+        lastSavedValues.current = { content, patient_id, professional_id }
+        setSaveStatus('saved')
+        onSuccess?.()
+      } catch (err) {
+        setSaveStatus('error')
+        console.error('Erro no salvamento automático:', err)
+      }
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [watchedValues, currentNoteId, open, user, onSuccess])
 
   const applyTemplate = (templateHtml: string) => {
     const current = form.getValues('content')
@@ -107,23 +176,24 @@ export function NoteFormDialog({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)
     try {
-      if (note) {
-        await updatePatientNote(note.id, {
+      if (currentNoteId) {
+        await updatePatientNote(currentNoteId, {
           patient_id: values.patient_id,
           professional_id: values.professional_id,
           content: values.content,
         })
         toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       } else {
+        if (!user?.id) throw new Error('Usuário não autenticado')
         await createPatientNote({
           patient_id: values.patient_id,
           professional_id: values.professional_id,
           content: values.content,
-          created_by: user?.id,
+          created_by: user.id,
         })
         toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       }
-      onSuccess()
+      onSuccess?.()
       onOpenChange(false)
     } catch (error) {
       const fieldErrors = extractFieldErrors(error)
@@ -292,7 +362,24 @@ export function NoteFormDialog({
               name="content"
               render={({ field, fieldState }) => (
                 <FormItem className="space-y-2">
-                  <FormLabel className="text-sm text-gray-600">Conteúdo da Nota</FormLabel>
+                  <div className="flex justify-between items-center">
+                    <FormLabel className="text-sm text-gray-600">Conteúdo da Nota</FormLabel>
+                    <div className="text-xs font-medium h-4 flex items-center">
+                      {saveStatus === 'saving' && (
+                        <span className="text-blue-500 animate-pulse">Salvando...</span>
+                      )}
+                      {saveStatus === 'saved' && (
+                        <span className="text-success flex items-center">
+                          <Check className="w-3 h-3 mr-1" /> Todas as alterações salvas
+                        </span>
+                      )}
+                      {saveStatus === 'error' && (
+                        <span className="text-destructive flex items-center">
+                          <AlertCircle className="w-3 h-3 mr-1" /> Erro ao salvar
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   <FormControl>
                     <div className="relative">
                       <RichTextEditor
