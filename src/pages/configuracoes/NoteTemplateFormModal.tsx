@@ -21,9 +21,19 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { createNoteTemplate, updateNoteTemplate, NoteTemplate } from '@/services/note_templates'
 import { useToast } from '@/hooks/use-toast'
-import { Bold, Italic, Underline, List, ListOrdered } from 'lucide-react'
+import { Bold, Italic, Underline, List, ListOrdered, AlertCircle } from 'lucide-react'
+import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
+import { cn } from '@/lib/utils'
 
-function RichTextEditor({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+function RichTextEditor({
+  value,
+  onChange,
+  error,
+}: {
+  value: string
+  onChange: (val: string) => void
+  error?: boolean
+}) {
   const editorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -39,7 +49,14 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (val: st
   }
 
   return (
-    <div className="border rounded-md focus-within:ring-1 focus-within:ring-primary overflow-hidden bg-background">
+    <div
+      className={cn(
+        'border rounded-md overflow-hidden bg-background transition-colors',
+        error
+          ? 'border-destructive focus-within:ring-1 focus-within:ring-destructive'
+          : 'focus-within:ring-1 focus-within:ring-primary',
+      )}
+    >
       <div className="flex items-center gap-1 p-1 border-b bg-muted/50">
         <Button
           type="button"
@@ -143,7 +160,25 @@ export function NoteTemplateFormModal({
       }
       onOpenChange(false)
     } catch (err) {
-      toast({ title: 'Erro ao salvar modelo', variant: 'destructive' })
+      const fieldErrors = extractFieldErrors(err)
+      if (Object.keys(fieldErrors).length > 0) {
+        Object.entries(fieldErrors).forEach(([field, message]) => {
+          form.setError(field as any, { type: 'manual', message })
+        })
+        toast({
+          title: 'Campos inválidos',
+          description: 'Verifique os campos destacados e tente novamente.',
+          variant: 'destructive',
+          duration: 4000,
+        })
+      } else {
+        toast({
+          title: 'Erro ao salvar modelo',
+          description: getErrorMessage(err) || 'Ocorreu um erro inesperado.',
+          variant: 'destructive',
+          duration: 4000,
+        })
+      }
     }
   }
 
@@ -176,16 +211,25 @@ export function NoteTemplateFormModal({
             <FormField
               control={form.control}
               name="content"
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>Conteúdo do Modelo</FormLabel>
                   <FormControl>
-                    <RichTextEditor value={field.value} onChange={field.onChange} />
+                    <div className="relative">
+                      <RichTextEditor
+                        value={field.value}
+                        onChange={field.onChange}
+                        error={!!fieldState.error}
+                      />
+                      {fieldState.error && (
+                        <AlertCircle className="absolute right-3 top-3 h-5 w-5 text-destructive pointer-events-none" />
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            />{' '}
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
