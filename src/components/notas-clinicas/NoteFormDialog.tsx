@@ -69,7 +69,7 @@ export function NoteFormDialog({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const [currentNoteId, setCurrentNoteId] = useState<string | undefined>(undefined)
-  const { user } = useAuth()
+  const { usuario: user } = useAuth()
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -126,7 +126,7 @@ export function NoteFormDialog({
     const isEmptyContent =
       !content || content.trim() === '' || content === '<br>' || content === '<p><br></p>'
     if (!patient_id || !professional_id || isEmptyContent) return
-    if (!user?.id) return
+    if (!user?.id && !pb.authStore.record?.id) return
 
     const hasChanged =
       content !== lastSavedValues.current.content ||
@@ -138,33 +138,38 @@ export function NoteFormDialog({
     setSaveStatus('idle')
 
     const timer = setTimeout(async () => {
-      if (!pb.authStore.isValid || !user?.id) {
+      if (!pb.authStore.isValid || (!user?.id && !pb.authStore.record?.id)) {
         setSaveStatus('error')
-        toast({
-          title: 'Authentication Error - Please Login',
-          description: 'Sua sessão expirou. Por favor, faça login novamente.',
-          variant: 'destructive',
-        })
-        window.dispatchEvent(new CustomEvent('pb-auth-error'))
-        return
+        try {
+          await pb.collection('users').authRefresh()
+        } catch {
+          toast({
+            title: 'Authentication Error - Please Login',
+            description: 'Sua sessão expirou. Por favor, faça login novamente.',
+            variant: 'destructive',
+          })
+          window.dispatchEvent(new CustomEvent('pb-auth-error'))
+          return
+        }
       }
 
       setSaveStatus('saving')
       try {
+        const creatorId = user?.id || pb.authStore.record?.id
         let updatedNote
         if (currentNoteId) {
           updatedNote = await updatePatientNote(currentNoteId, {
             patient_id,
             professional_id,
             content,
-            created_by: user.id,
+            created_by: creatorId,
           })
         } else {
           updatedNote = await createPatientNote({
             patient_id,
             professional_id,
             content,
-            created_by: user.id,
+            created_by: creatorId,
           })
           setCurrentNoteId(updatedNote.id)
         }
@@ -209,14 +214,18 @@ export function NoteFormDialog({
   }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!pb.authStore.isValid || !user?.id) {
-      toast({
-        title: 'Authentication Error - Please Login',
-        description: 'Sua sessão expirou. Por favor, faça login novamente.',
-        variant: 'destructive',
-      })
-      window.dispatchEvent(new CustomEvent('pb-auth-error'))
-      return
+    if (!pb.authStore.isValid || (!user?.id && !pb.authStore.record?.id)) {
+      try {
+        await pb.collection('users').authRefresh()
+      } catch {
+        toast({
+          title: 'Authentication Error - Please Login',
+          description: 'Sua sessão expirou. Por favor, faça login novamente.',
+          variant: 'destructive',
+        })
+        window.dispatchEvent(new CustomEvent('pb-auth-error'))
+        return
+      }
     }
 
     const isEmptyContent =
@@ -231,12 +240,13 @@ export function NoteFormDialog({
 
     setIsSubmitting(true)
     try {
+      const creatorId = user?.id || pb.authStore.record?.id
       if (currentNoteId) {
         await updatePatientNote(currentNoteId, {
           patient_id: values.patient_id,
           professional_id: values.professional_id,
           content: values.content,
-          created_by: user.id,
+          created_by: creatorId,
         })
         toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       } else {
@@ -244,7 +254,7 @@ export function NoteFormDialog({
           patient_id: values.patient_id,
           professional_id: values.professional_id,
           content: values.content,
-          created_by: user.id,
+          created_by: creatorId,
         })
         toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       }

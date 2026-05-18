@@ -95,6 +95,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     init()
 
+    // Silent Token Refresh periodically (every 15 minutes)
+    const refreshTokenInterval = setInterval(
+      async () => {
+        if (pb.authStore.isValid) {
+          try {
+            await pb.collection('users').authRefresh()
+          } catch (e) {
+            console.warn('Falha no refresh silencioso', e)
+          }
+        }
+      },
+      15 * 60 * 1000,
+    )
+
     const unsubscribe = pb.authStore.onChange(async (_token, record) => {
       if (record) {
         const roleName = await loadRoleAndPermissions(record)
@@ -125,6 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       window.removeEventListener('pb-auth-error', handleAuthError)
       unsubscribe()
+      clearInterval(refreshTokenInterval)
     }
   }, [])
 
