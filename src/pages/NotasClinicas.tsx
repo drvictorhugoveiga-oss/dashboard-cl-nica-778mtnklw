@@ -5,6 +5,7 @@ import { FileText, Plus, AlertCircle, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
+import pb from '@/lib/pocketbase/client'
 import {
   getAllPatientNotes,
   getPatientsForSelector,
@@ -33,6 +34,7 @@ export default function NotasClinicas() {
   const [selectedNote, setSelectedNote] = useState<any>(null)
 
   const loadInitialData = async () => {
+    if (!pb.authStore.isValid) return
     try {
       const [pts, profs] = await Promise.all([
         getPatientsForSelector(),
@@ -40,19 +42,37 @@ export default function NotasClinicas() {
       ])
       setPatients(pts)
       setProfessionals(profs)
-    } catch (err) {
-      toast({ title: 'Erro ao carregar dados iniciais', variant: 'destructive', duration: 3000 })
+    } catch (err: any) {
+      if (err?.status === 401 || err?.status === 403) {
+        toast({
+          title: 'Erro de comunicação - Usuário não autenticado',
+          variant: 'destructive',
+          duration: 3000,
+        })
+      } else {
+        toast({ title: 'Erro ao carregar dados iniciais', variant: 'destructive', duration: 3000 })
+      }
     }
   }
 
   const loadNotes = async () => {
+    if (!pb.authStore.isValid) {
+      setError('Erro de comunicação - Usuário não autenticado')
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     setError(null)
     try {
       const records = await getAllPatientNotes()
       setNotes(records)
-    } catch (err) {
-      setError('Erro ao carregar as notas. Tente novamente.')
+    } catch (err: any) {
+      if (err?.status === 401 || err?.status === 403) {
+        setError('Erro de comunicação - Usuário não autenticado')
+      } else {
+        setError('Erro ao carregar as notas. Tente novamente.')
+      }
     } finally {
       setIsLoading(false)
     }

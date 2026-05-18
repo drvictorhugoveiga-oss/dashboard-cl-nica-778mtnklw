@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
 import { cn } from '@/lib/utils'
+import pb from '@/lib/pocketbase/client'
 import { createPatientNote, updatePatientNote } from '@/services/patient_notes'
 
 import {
@@ -132,6 +133,16 @@ export function NoteFormDialog({
     setSaveStatus('idle')
 
     const timer = setTimeout(async () => {
+      if (!pb.authStore.isValid || !user?.id) {
+        setSaveStatus('error')
+        toast({
+          title: 'Erro de comunicação',
+          description: 'Usuário não autenticado. Por favor, faça login novamente.',
+          variant: 'destructive',
+        })
+        return
+      }
+
       setSaveStatus('saving')
       try {
         if (currentNoteId) {
@@ -139,6 +150,7 @@ export function NoteFormDialog({
             patient_id,
             professional_id,
             content,
+            created_by: user.id,
           })
         } else {
           const newNote = await createPatientNote({
@@ -152,14 +164,28 @@ export function NoteFormDialog({
         lastSavedValues.current = { content, patient_id, professional_id }
         setSaveStatus('saved')
         onSuccess?.()
-      } catch (err) {
+      } catch (err: any) {
         setSaveStatus('error')
-        console.error('Erro no salvamento automático:', err)
+        if (err?.status === 401 || err?.status === 403) {
+          toast({
+            title: 'Erro de comunicação',
+            description: 'Usuário não autenticado. Por favor, faça login novamente.',
+            variant: 'destructive',
+          })
+        } else {
+          const fieldErrors = extractFieldErrors(err)
+          if (Object.keys(fieldErrors).length > 0) {
+            Object.entries(fieldErrors).forEach(([field, message]) => {
+              form.setError(field as any, { type: 'manual', message })
+            })
+          }
+          console.error('Erro no salvamento automático:', err)
+        }
       }
     }, 2000)
 
     return () => clearTimeout(timer)
-  }, [watchedValues, currentNoteId, open, user, onSuccess])
+  }, [watchedValues, currentNoteId, open, user, onSuccess, form, toast])
 
   const applyTemplate = (templateHtml: string) => {
     const current = form.getValues('content')
@@ -174,6 +200,15 @@ export function NoteFormDialog({
   }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!pb.authStore.isValid || !user?.id) {
+      toast({
+        title: 'Erro de comunicação',
+        description: 'Usuário não autenticado. Por favor, faça login novamente.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setIsSubmitting(true)
     try {
       if (currentNoteId) {
@@ -181,10 +216,10 @@ export function NoteFormDialog({
           patient_id: values.patient_id,
           professional_id: values.professional_id,
           content: values.content,
+          created_by: user.id,
         })
         toast({ title: 'Nota clínica salva com sucesso!', duration: 3000 })
       } else {
-        if (!user?.id) throw new Error('Usuário não autenticado')
         await createPatientNote({
           patient_id: values.patient_id,
           professional_id: values.professional_id,
@@ -195,7 +230,17 @@ export function NoteFormDialog({
       }
       onSuccess?.()
       onOpenChange(false)
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.status === 401 || error?.status === 403) {
+        toast({
+          title: 'Erro de comunicação',
+          description: 'Usuário não autenticado. Por favor, faça login novamente.',
+          variant: 'destructive',
+        })
+        setIsSubmitting(false)
+        return
+      }
+
       const fieldErrors = extractFieldErrors(error)
       if (Object.keys(fieldErrors).length > 0) {
         Object.entries(fieldErrors).forEach(([field, message]) => {
