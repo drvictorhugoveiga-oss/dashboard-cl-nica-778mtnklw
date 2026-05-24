@@ -27,7 +27,10 @@ import { cn } from '@/lib/utils'
 const formSchema = z.object({
   cost_per_month: z.coerce
     .number({ invalid_type_error: 'Valor numérico inválido' })
-    .min(0.01, 'O custo deve ser maior que zero'),
+    .min(0, 'O custo não pode ser negativo'),
+  cost_per_session: z.coerce
+    .number({ invalid_type_error: 'Valor numérico inválido' })
+    .min(0, 'O custo não pode ser negativo'),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -47,6 +50,7 @@ export function CustoForm({ open, onOpenChange, plan, costRecord, professionalId
     resolver: zodResolver(formSchema),
     defaultValues: {
       cost_per_month: costRecord ? costRecord.cost_per_month : 0,
+      cost_per_session: costRecord ? costRecord.cost_per_session || 0 : 0,
     },
     mode: 'onTouched',
   })
@@ -54,7 +58,8 @@ export function CustoForm({ open, onOpenChange, plan, costRecord, professionalId
   useEffect(() => {
     if (open) {
       form.reset({
-        cost_per_month: costRecord ? costRecord.cost_per_month : '',
+        cost_per_month: costRecord ? costRecord.cost_per_month : 0,
+        cost_per_session: costRecord ? costRecord.cost_per_session || 0 : 0,
       } as any)
     }
   }, [open, costRecord, form])
@@ -62,12 +67,16 @@ export function CustoForm({ open, onOpenChange, plan, costRecord, professionalId
   const onSubmit = async (values: FormValues) => {
     try {
       if (costRecord) {
-        await updateProfessionalCost(costRecord.id, { cost_per_month: values.cost_per_month })
+        await updateProfessionalCost(costRecord.id, {
+          cost_per_month: values.cost_per_month,
+          cost_per_session: values.cost_per_session,
+        })
       } else {
         await createProfessionalCost({
           professional_id: professionalId,
           plan_id: plan.id,
           cost_per_month: values.cost_per_month,
+          cost_per_session: values.cost_per_session,
         })
       }
       toast({
@@ -119,17 +128,30 @@ export function CustoForm({ open, onOpenChange, plan, costRecord, professionalId
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-2">
-            <FormField
-              control={form.control}
-              name="cost_per_month"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel className="text-sm">Custo Mensal (R$)</FormLabel>
-                  <FormControl>{renderInput(field, fieldState)}</FormControl>
-                  <FormMessage className="text-xs text-destructive" />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="cost_per_month"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Custo Mensal (R$)</FormLabel>
+                    <FormControl>{renderInput(field, fieldState)}</FormControl>
+                    <FormMessage className="text-xs text-destructive" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cost_per_session"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Custo por Sessão (R$)</FormLabel>
+                    <FormControl>{renderInput(field, fieldState)}</FormControl>
+                    <FormMessage className="text-xs text-destructive" />
+                  </FormItem>
+                )}
+              />
+            </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button
                 type="button"

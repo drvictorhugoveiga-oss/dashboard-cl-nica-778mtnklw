@@ -130,9 +130,20 @@ export function CustosList({ selectedProfId, onSelectProf }: Props) {
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="font-semibold text-foreground">{plan.name}</h3>
-                  <p className="text-xl font-bold mt-1 text-primary">
-                    {costRecord ? formatCurrency(costRecord.cost_per_month) : 'R$ 0,00'}
-                  </p>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-sm">
+                      <span className="text-muted-foreground mr-2">Mensal:</span>
+                      <span className="font-semibold text-primary">
+                        {costRecord ? formatCurrency(costRecord.cost_per_month) : 'R$ 0,00'}
+                      </span>
+                    </p>
+                    <p className="text-sm">
+                      <span className="text-muted-foreground mr-2">Sessão:</span>
+                      <span className="font-semibold text-primary">
+                        {costRecord ? formatCurrency(costRecord.cost_per_session || 0) : 'R$ 0,00'}
+                      </span>
+                    </p>
+                  </div>
                 </div>
                 <Button
                   variant="ghost"
@@ -153,6 +164,7 @@ export function CustosList({ selectedProfId, onSelectProf }: Props) {
               <TableRow>
                 <TableHead>Plano</TableHead>
                 <TableHead>Custo Mensal</TableHead>
+                <TableHead>Custo por Sessão</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -167,7 +179,14 @@ export function CustosList({ selectedProfId, onSelectProf }: Props) {
                     {costRecord ? (
                       formatCurrency(costRecord.cost_per_month)
                     ) : (
-                      <span className="text-muted-foreground font-normal">Não definido</span>
+                      <span className="text-muted-foreground font-normal">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-semibold text-primary">
+                    {costRecord ? (
+                      formatCurrency(costRecord.cost_per_session || 0)
+                    ) : (
+                      <span className="text-muted-foreground font-normal">-</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right">

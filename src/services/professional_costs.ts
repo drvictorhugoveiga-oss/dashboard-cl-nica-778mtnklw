@@ -6,6 +6,7 @@ export interface ProfessionalCost {
   professional_id: string
   plan_id: string
   cost_per_month: number
+  cost_per_session?: number
   expand?: {
     professional_id?: any
     plan_id?: any

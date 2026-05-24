@@ -10,6 +10,7 @@ import {
   UserRound,
   FileText,
   PieChart,
+  CircleDollarSign,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import {
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Profissionais', href: '/profissionais', icon: Users },
   { name: 'Notas Clínicas', href: '/notas-clinicas', icon: FileText },
   { name: 'Lembretes', href: '/lembretes', icon: Bell },
+  { name: 'Finanças', href: '/financas', icon: CircleDollarSign },
   { name: 'Relatórios Financeiros', href: '/relatorios-financeiros', icon: PieChart },
   { name: 'Configurações', href: '/configuracoes', icon: Settings },
 ]
@@ -44,6 +46,7 @@ export function AppSidebar() {
     Profissionais: { resource: 'professionals', action: 'view' },
     'Notas Clínicas': { resource: 'patients', action: 'manage' },
     Lembretes: { resource: 'reminders', action: 'manage' },
+    Finanças: { resource: 'settings', action: 'access' },
     'Relatórios Financeiros': { resource: 'financial_reports', action: 'view' },
     Configurações: { resource: 'settings', action: 'access' },
   }

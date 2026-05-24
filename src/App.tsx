@@ -10,6 +10,7 @@ import Lembretes from './pages/Lembretes'
 import NotasClinicas from './pages/NotasClinicas'
 import Configuracoes from './pages/Configuracoes'
 import { RelatoriosFinanceiros } from './pages/relatorios-financeiros/RelatoriosFinanceiros'
+import FinancasPage from './pages/financas/FinancasPage'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/profissionais" element={<Profissionais />} />
               <Route path="/lembretes" element={<Lembretes />} />
               <Route path="/notas-clinicas" element={<NotasClinicas />} />
+              <Route path="/financas" element={<FinancasPage />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
               <Route path="/relatorios-financeiros" element={<RelatoriosFinanceiros />} />
             </Route>
