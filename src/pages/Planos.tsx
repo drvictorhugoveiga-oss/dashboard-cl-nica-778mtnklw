@@ -91,7 +91,7 @@ export default function Planos() {
             className="bg-primary hover:bg-primary/90 text-primary-foreground hover:shadow-elevation transition-all duration-200 rounded-[8px]"
           >
             <Plus className="mr-2 size-4" />
-            Novo Plano
+            Adicionar Plano
           </Button>
         )}
       </div>
@@ -166,7 +166,7 @@ export default function Planos() {
                   className="bg-primary hover:bg-primary/90 transition-all duration-200 shadow-sm rounded-[8px]"
                 >
                   <Plus className="mr-2 size-4" />
-                  Novo Plano
+                  Adicionar Plano
                 </Button>
               </div>
             )}

@@ -28,7 +28,7 @@ export function PlanDeleteDialog({ plan, onClose, onSuccess }: Props) {
     try {
       await deletePlan(plan.id)
       toast({
-        title: 'Plano deletado com sucesso',
+        title: 'Plano excluído com sucesso',
         duration: 3000,
         className: 'data-[state=open]:duration-300',
       })
@@ -36,7 +36,7 @@ export function PlanDeleteDialog({ plan, onClose, onSuccess }: Props) {
       onClose()
     } catch (err) {
       toast({
-        title: 'Erro ao deletar plano',
+        title: 'Erro ao excluir plano',
         variant: 'destructive',
         duration: 3000,
         className: 'data-[state=open]:duration-300',
@@ -51,7 +51,7 @@ export function PlanDeleteDialog({ plan, onClose, onSuccess }: Props) {
       <AlertDialogContent className="rounded-[8px] animate-in fade-in duration-200 shadow-elevation border-border/50">
         <AlertDialogHeader>
           <AlertDialogTitle className="font-bold text-[20px]">
-            Tem certeza que deseja deletar este plano?
+            Tem certeza que deseja excluir este plano?
           </AlertDialogTitle>
           <AlertDialogDescription className="text-sm font-regular">
             Esta ação não pode ser desfeita. O plano{' '}
@@ -74,7 +74,7 @@ export function PlanDeleteDialog({ plan, onClose, onSuccess }: Props) {
             disabled={isDeleting}
             className="rounded-[8px] bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all duration-200 shadow-sm"
           >
-            {isDeleting ? 'Deletando...' : 'Deletar'}
+            {isDeleting ? 'Excluindo...' : 'Excluir'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -155,7 +155,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (usuario.role === 'staff' || usuario.role_name === 'staff') {
       if (
-        resource === 'settings' ||
         resource === 'plans' ||
         resource === 'professionals' ||
         resource === 'financial_reports'

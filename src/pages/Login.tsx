@@ -12,7 +12,18 @@ import {
   CardFooter,
 } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
+import { useState } from 'react'
 import { HeartPulse, Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import pb from '@/lib/pocketbase/client'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,6 +45,9 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function Login() {
   const { login, carregando, usuario } = useAuth()
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetting, setResetting] = useState(false)
+  const [resetOpen, setResetOpen] = useState(false)
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -47,6 +61,27 @@ export default function Login() {
       navigate('/dashboard')
     }
   }, [usuario, navigate])
+
+  const handleResetPassword = async () => {
+    if (!resetEmail) {
+      toast({ title: 'Preencha o e-mail', variant: 'destructive' })
+      return
+    }
+    setResetting(true)
+    try {
+      await pb.collection('users').requestPasswordReset(resetEmail)
+      toast({
+        title: 'E-mail de recuperação enviado!',
+        className: 'bg-success text-success-foreground',
+      })
+      setResetOpen(false)
+      setResetEmail('')
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar e-mail', description: err.message, variant: 'destructive' })
+    } finally {
+      setResetting(false)
+    }
+  }
 
   const onSubmit = async (values: LoginFormValues) => {
     const { error } = await login(values.email, values.password)
@@ -116,9 +151,38 @@ export default function Login() {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex justify-center border-t p-4">
-          <Button variant="link" className="text-xs text-muted-foreground" disabled>
-            Esqueceu a senha?
+        <CardFooter className="flex flex-col items-center gap-2 border-t p-4">
+          <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+            <DialogTrigger asChild>
+              <Button variant="link" className="text-xs text-muted-foreground">
+                Esqueceu a senha?
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Recuperar Senha</DialogTitle>
+                <DialogDescription>
+                  Digite seu e-mail para receber um link de redefinição de senha.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex items-center space-x-2 my-2">
+                <div className="grid flex-1 gap-2">
+                  <Input
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleResetPassword} disabled={resetting}>
+                  {resetting ? <Loader2 className="size-4 animate-spin" /> : 'Enviar'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Button variant="link" className="text-sm font-medium" asChild>
+            <Link to="/solicitar-acesso">Não tem conta? Solicite Acesso</Link>
           </Button>
         </CardFooter>
       </Card>

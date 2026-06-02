@@ -7,6 +7,11 @@ export const formatBRL = (val: number) =>
 export function SummaryCards({ data }: { data: any }) {
   if (!data) return null
 
+  const totalRevenue = data.totalRevenue || 0
+  const totalCost = data.totalCost || 0
+  const netMargin = data.netMargin || 0
+  const netProfit = data.netProfit || 0
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       <Card>
@@ -15,7 +20,7 @@ export function SummaryCards({ data }: { data: any }) {
           <DollarSign className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-primary">{formatBRL(data.totalRevenue)}</div>
+          <div className="text-2xl font-bold text-primary">{formatBRL(totalRevenue)}</div>
           <p className="text-xs text-muted-foreground mt-1">No período selecionado</p>
         </CardContent>
       </Card>
@@ -26,7 +31,7 @@ export function SummaryCards({ data }: { data: any }) {
           <TrendingDown className="h-4 w-4 text-destructive" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-destructive">{formatBRL(data.totalCost)}</div>
+          <div className="text-2xl font-bold text-destructive">{formatBRL(totalCost)}</div>
           <p className="text-xs text-muted-foreground mt-1">Custo acumulado</p>
         </CardContent>
       </Card>
@@ -37,7 +42,7 @@ export function SummaryCards({ data }: { data: any }) {
           <Percent className="h-4 w-4 text-blue-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{data.netMargin.toFixed(1)}%</div>
+          <div className="text-2xl font-bold">{netMargin.toFixed(1)}%</div>
           <p className="text-xs text-muted-foreground mt-1">Rentabilidade do período</p>
         </CardContent>
       </Card>
@@ -49,9 +54,9 @@ export function SummaryCards({ data }: { data: any }) {
         </CardHeader>
         <CardContent>
           <div
-            className={`text-2xl font-bold ${data.netProfit >= 0 ? 'text-success' : 'text-destructive'}`}
+            className={`text-2xl font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}
           >
-            {formatBRL(data.netProfit)}
+            {formatBRL(netProfit)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">Após dedução de custos</p>
         </CardContent>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Download, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -26,24 +26,52 @@ export function RelatoriosFinanceiros() {
 
   const { computed, loading, error, refetch } = useFinancialData(period, customStart, customEnd)
 
+  useEffect(() => {
+    const style = document.createElement('style')
+    style.innerHTML = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #print-area, #print-area * {
+          visibility: visible;
+        }
+        #print-area {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+      }
+    `
+    document.head.appendChild(style)
+    return () => {
+      document.head.removeChild(style)
+    }
+  }, [])
+
   if (usuario?.role !== 'admin' && usuario?.role_name !== 'admin') {
     return <Navigate to="/" replace />
   }
 
+  const handlePrint = () => {
+    window.print()
+  }
+
   return (
-    <div className="flex-1 space-y-6 p-8 animate-fade-in-up">
+    <div id="print-area" className="flex-1 space-y-6 p-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Relatórios Financeiros</h2>
           <p className="text-muted-foreground">Visão geral do desempenho financeiro da clínica.</p>
         </div>
-        <Button variant="outline" disabled className="gap-2">
+        <Button variant="outline" className="gap-2 print:hidden" onClick={handlePrint}>
           <Download className="w-4 h-4" />
-          Exportar como PDF
+          Exportar PDF
         </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center bg-card p-4 rounded-lg border border-border shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-4 items-center bg-card p-4 rounded-lg border border-border shadow-sm print:hidden">
         <div className="w-full sm:w-[240px]">
           <Select value={period} onValueChange={(v: Period) => setPeriod(v)}>
             <SelectTrigger>
@@ -79,7 +107,7 @@ export function RelatoriosFinanceiros() {
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="print:hidden">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Erro ao carregar dados</AlertTitle>
           <AlertDescription className="flex items-center justify-between">

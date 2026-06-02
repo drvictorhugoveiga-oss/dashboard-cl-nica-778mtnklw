@@ -32,7 +32,7 @@ export function TablesSection({ data }: { data: any }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.patientDetails.map((p: any) => (
+              {(data.patientDetails || []).map((p: any) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.patientName}</TableCell>
                   <TableCell>{p.planName}</TableCell>
@@ -49,7 +49,7 @@ export function TablesSection({ data }: { data: any }) {
                   </TableCell>
                 </TableRow>
               ))}
-              {data.patientDetails.length === 0 && (
+              {(!data.patientDetails || data.patientDetails.length === 0) && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
                     Nenhum dado para o período

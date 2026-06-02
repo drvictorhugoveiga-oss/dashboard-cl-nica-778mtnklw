@@ -3,9 +3,17 @@ import { startOfMonth, endOfMonth, subMonths, eachMonthOfInterval } from 'date-f
 import pb from '@/lib/pocketbase/client'
 
 export type Period = 'this_month' | 'last_3' | 'last_6' | 'last_12' | 'custom'
+export type ViewType = 'general' | 'monthly'
+
+const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
 export function useFinancialData(period: Period, customStart?: string, customEnd?: string) {
-  const [data, setData] = useState<{ patients: any[]; costs: any[]; opCosts: any[] } | null>(null)
+  const [data, setData] = useState<{
+    patients: any[]
+    costs: any[]
+    opCosts: any[]
+    revenue: any[]
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
@@ -13,22 +21,13 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
     try {
       setLoading(true)
       setError(null)
-      try {
-        const res = await pb.send('/backend/v1/financial-reports', { method: 'GET' })
-        setData({
-          patients: res.patients || [],
-          costs: res.professional_costs || res.costs || [],
-          opCosts: res.operational_costs || [],
-        })
-      } catch (err) {
-        // Fallback
-        const [patientsRes, costsRes, opCostsRes] = await Promise.all([
-          pb.collection('patients').getFullList({ expand: 'plan_id' }),
-          pb.collection('professional_costs').getFullList({ expand: 'professional_id,plan_id' }),
-          pb.collection('operational_costs').getFullList(),
-        ])
-        setData({ patients: patientsRes, costs: costsRes, opCosts: opCostsRes })
-      }
+      const [patientsRes, costsRes, opCostsRes, revenueRes] = await Promise.all([
+        pb.collection('patients').getFullList({ expand: 'plan_id' }),
+        pb.collection('professional_costs').getFullList({ expand: 'professional_id,plan_id' }),
+        pb.collection('operational_costs').getFullList(),
+        pb.collection('revenue').getFullList(),
+      ])
+      setData({ patients: patientsRes, costs: costsRes, opCosts: opCostsRes, revenue: revenueRes })
     } catch (err) {
       setError(err as Error)
     } finally {
@@ -56,6 +55,7 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
 
     const months = eachMonthOfInterval({ start, end })
 
+    // General View Logic
     const patientDetails = data.patients
       .map((p) => {
         const plan = p.expand?.plan_id
@@ -105,7 +105,7 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
     }))
 
     const filteredOpCosts = data.opCosts.filter((c) => {
-      const d = new Date(c.date)
+      const d = new Date(c.date.replace(' ', 'T'))
       return d >= start && d <= end
     })
 
@@ -119,7 +119,7 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
       { name: 'Perdas', value: totalLosses, fill: '#ef4444' },
     ]
 
-    return {
+    const general = {
       patientDetails,
       profitPerPlan,
       gainsVsLosses,
@@ -127,6 +127,57 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
       totalCost: totalLosses,
       netMargin: totalGains > 0 ? ((totalGains - totalLosses) / totalGains) * 100 : 0,
       netProfit: totalGains - totalLosses,
+    }
+
+    // Monthly View Logic
+    const monthlyData = months.map((m) => {
+      const mStart = startOfMonth(m)
+      const mEnd = endOfMonth(m)
+
+      const mRevenue = data.revenue
+        .filter((r) => {
+          const d = new Date(r.date.replace(' ', 'T'))
+          return d >= mStart && d <= mEnd
+        })
+        .reduce((sum, r) => sum + r.value, 0)
+
+      const mOpCosts = data.opCosts
+        .filter((c) => {
+          const d = new Date(c.date.replace(' ', 'T'))
+          return d >= mStart && d <= mEnd
+        })
+        .reduce((sum, c) => sum + c.cost_value, 0)
+
+      return {
+        monthLabel: `${MONTHS[m.getMonth()]}/${m.getFullYear()}`,
+        revenue: mRevenue,
+        costs: mOpCosts,
+        net: mRevenue - mOpCosts,
+      }
+    })
+
+    const monthlyTotals = monthlyData.reduce(
+      (acc, curr) => ({
+        revenue: acc.revenue + curr.revenue,
+        costs: acc.costs + curr.costs,
+        net: acc.net + curr.net,
+      }),
+      { revenue: 0, costs: 0, net: 0 },
+    )
+
+    const monthly = {
+      details: monthlyData,
+      totalRevenue: monthlyTotals.revenue,
+      totalCost: monthlyTotals.costs,
+      netMargin: monthlyTotals.revenue > 0 ? (monthlyTotals.net / monthlyTotals.revenue) * 100 : 0,
+      netProfit: monthlyTotals.net,
+    }
+
+    return {
+      general,
+      monthly,
+      startDate: start,
+      endDate: end,
     }
   }, [data, period, customStart, customEnd])
 

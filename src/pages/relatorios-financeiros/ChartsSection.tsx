@@ -12,13 +12,16 @@ import { formatBRL } from './SummaryCards'
 export function ChartsSection({ data }: { data: any }) {
   if (!data) return null
 
+  const profitPerPlan = data.general?.profitPerPlan || data.profitPerPlan || []
+  const gainsVsLosses = data.general?.gainsVsLosses || data.gainsVsLosses || []
+
   const profitConfig: any = {}
-  data.profitPerPlan.forEach((d: any) => {
+  profitPerPlan.forEach((d: any) => {
     profitConfig[d.name] = { label: d.name, color: d.fill }
   })
 
   const glConfig: any = {}
-  data.gainsVsLosses.forEach((d: any) => {
+  gainsVsLosses.forEach((d: any) => {
     glConfig[d.name] = { label: d.name, color: d.fill }
   })
 
@@ -29,11 +32,11 @@ export function ChartsSection({ data }: { data: any }) {
           <CardTitle>Lucro por Plano</CardTitle>
         </CardHeader>
         <CardContent>
-          {data.profitPerPlan.length > 0 ? (
+          {profitPerPlan.length > 0 ? (
             <ChartContainer config={profitConfig} className="h-[300px] w-full">
               <PieChart>
                 <Pie
-                  data={data.profitPerPlan}
+                  data={profitPerPlan}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
@@ -41,7 +44,7 @@ export function ChartsSection({ data }: { data: any }) {
                   innerRadius={60}
                   outerRadius={100}
                 >
-                  {data.profitPerPlan.map((entry: any, index: number) => (
+                  {profitPerPlan.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
@@ -64,11 +67,11 @@ export function ChartsSection({ data }: { data: any }) {
           <CardTitle>Ganhos vs Perdas</CardTitle>
         </CardHeader>
         <CardContent>
-          {data.gainsVsLosses.length > 0 ? (
+          {gainsVsLosses.length > 0 ? (
             <ChartContainer config={glConfig} className="h-[300px] w-full">
               <PieChart>
                 <Pie
-                  data={data.gainsVsLosses}
+                  data={gainsVsLosses}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
@@ -76,7 +79,7 @@ export function ChartsSection({ data }: { data: any }) {
                   innerRadius={60}
                   outerRadius={100}
                 >
-                  {data.gainsVsLosses.map((entry: any, index: number) => (
+                  {gainsVsLosses.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
