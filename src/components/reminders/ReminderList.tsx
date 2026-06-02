@@ -32,7 +32,7 @@ interface Props {
   reminders: Reminder[]
   isLoading: boolean
   onEdit: (r: Reminder) => void
-  onComplete: (id: string) => void
+  onToggleStatus: (id: string, currentStatus: string) => void
   onDelete: (id: string) => void
   onCreateNew: () => void
 }
@@ -43,7 +43,7 @@ function getUrgencyStatus(dateStr: string, status: string) {
   const scheduled = startOfDay(parseISO(dateStr))
   const today = startOfDay(new Date())
   if (isBefore(scheduled, today)) return 'overdue'
-  if (!isAfter(scheduled, addDays(today, 7))) return 'upcoming'
+  if (!isAfter(scheduled, addDays(today, 1))) return 'upcoming'
   return 'none'
 }
 
@@ -55,7 +55,7 @@ export function ReminderList({
   reminders,
   isLoading,
   onEdit,
-  onComplete,
+  onToggleStatus,
   onDelete,
   onCreateNew,
 }: Props) {
@@ -89,15 +89,25 @@ export function ReminderList({
 
   const renderActions = (r: Reminder) => (
     <div className="flex items-center gap-1 justify-end">
-      {r.status === 'pending' && (
+      {(r.status === 'pending' || r.status === 'completed') && (
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 text-success hover:text-success hover:bg-success/20"
-          onClick={() => onComplete(r.id)}
-          title="Marcar como Concluído"
+          className={cn(
+            'h-8 w-8 p-0',
+            r.status === 'completed'
+              ? 'text-muted-foreground hover:bg-muted'
+              : 'text-success hover:text-success hover:bg-success/20',
+          )}
+          onClick={() => onToggleStatus(r.id, r.status)}
+          title={r.status === 'completed' ? 'Marcar como Pendente' : 'Marcar como Concluído'}
         >
-          <CheckCircle2 className="size-4" />
+          <CheckCircle2
+            className={cn(
+              'size-4',
+              r.status === 'completed' ? 'fill-muted-foreground text-card' : '',
+            )}
+          />
         </Button>
       )}
       <Button
@@ -141,23 +151,27 @@ export function ReminderList({
     </div>
   )
 
-  const getRowClass = (urgency: string, index: number) => {
+  const getRowClass = (urgency: string, status: string, index: number) => {
     let base = index % 2 === 0 ? 'bg-card' : 'bg-muted/30'
     let highlight = ''
-    if (urgency === 'overdue') {
-      highlight = 'bg-highlight-red animate-pulse-subtle'
+
+    if (status === 'completed') {
+      highlight = 'opacity-60 grayscale-[30%] border-l-4 border-l-transparent'
+    } else if (urgency === 'overdue') {
+      highlight = 'border-l-4 border-l-destructive bg-destructive/5'
     } else if (urgency === 'upcoming') {
-      highlight = 'bg-highlight-blue'
-    } else if (urgency === 'completed') {
-      highlight = 'bg-highlight-green'
+      highlight = 'border-l-4 border-l-orange-500 bg-orange-500/5'
+    } else {
+      highlight = 'border-l-4 border-l-transparent'
     }
-    return cn(base, highlight, 'hover:bg-muted cursor-pointer transition-colors duration-200')
+
+    return cn(base, highlight, 'hover:bg-muted transition-all duration-200')
   }
 
   const getUrgencyClass = (urgency: string) => {
-    if (urgency === 'overdue') return 'text-[hsl(0,84%,60%)] font-semibold'
-    if (urgency === 'upcoming') return 'text-[hsl(212,100%,48%)] font-medium'
-    if (urgency === 'completed') return 'text-[hsl(142,71%,45%)] font-medium'
+    if (urgency === 'overdue') return 'text-destructive font-bold'
+    if (urgency === 'upcoming') return 'text-orange-500 font-semibold'
+    if (urgency === 'completed') return 'text-success font-medium'
     return ''
   }
 
@@ -179,12 +193,23 @@ export function ReminderList({
             {reminders.map((r, i) => {
               const urgency = getUrgencyStatus(r.scheduled_date, r.status)
               return (
-                <TableRow key={r.id} className={getRowClass(urgency, i)}>
-                  <TableCell className="font-medium text-left">
+                <TableRow key={r.id} className={getRowClass(urgency, r.status, i)}>
+                  <TableCell
+                    className={cn(
+                      'font-medium text-left',
+                      r.status === 'completed' && 'line-through text-muted-foreground',
+                    )}
+                  >
                     {r.expand?.patient_id?.name}
                   </TableCell>
                   <TableCell className="text-left">{TYPE_LABELS[r.type]}</TableCell>
-                  <TableCell className="max-w-[200px] truncate text-left" title={r.description}>
+                  <TableCell
+                    className={cn(
+                      'max-w-[200px] truncate text-left',
+                      r.status === 'completed' && 'line-through text-muted-foreground',
+                    )}
+                    title={r.description}
+                  >
                     {r.title}
                   </TableCell>
                   <TableCell className="text-left">
@@ -194,17 +219,34 @@ export function ReminderList({
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge
-                      variant={
-                        r.status === 'completed'
-                          ? 'default'
-                          : r.status === 'cancelled'
-                            ? 'secondary'
-                            : 'outline'
-                      }
-                    >
-                      {STATUS_LABELS[r.status]}
-                    </Badge>
+                    <div className="flex flex-col items-center gap-1">
+                      <Badge
+                        variant={
+                          r.status === 'completed'
+                            ? 'default'
+                            : r.status === 'cancelled'
+                              ? 'secondary'
+                              : 'outline'
+                        }
+                        className={cn(
+                          r.status === 'completed' && 'bg-success hover:bg-success/90',
+                          urgency === 'overdue' && 'border-destructive text-destructive',
+                          urgency === 'upcoming' && 'border-orange-500 text-orange-500',
+                        )}
+                      >
+                        {STATUS_LABELS[r.status]}
+                      </Badge>
+                      {urgency === 'overdue' && (
+                        <span className="text-[10px] font-bold text-destructive uppercase">
+                          Atrasado
+                        </span>
+                      )}
+                      {urgency === 'upcoming' && (
+                        <span className="text-[10px] font-bold text-orange-500 uppercase">
+                          Próximo
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right flex justify-end">{renderActions(r)}</TableCell>
                 </TableRow>
@@ -221,25 +263,60 @@ export function ReminderList({
             <Card
               key={r.id}
               className={cn(
-                'overflow-hidden rounded-[8px] shadow-subtle border-b-2',
-                urgency === 'overdue'
-                  ? 'border-destructive'
-                  : urgency === 'upcoming'
-                    ? 'border-primary'
-                    : urgency === 'completed'
-                      ? 'border-success'
-                      : 'border-border',
+                'overflow-hidden rounded-[8px] shadow-subtle border-l-4',
+                r.status === 'completed'
+                  ? 'opacity-70 grayscale-[30%] border-l-transparent'
+                  : urgency === 'overdue'
+                    ? 'border-l-destructive bg-destructive/5'
+                    : urgency === 'upcoming'
+                      ? 'border-l-orange-500 bg-orange-500/5'
+                      : 'border-l-transparent',
               )}
             >
               <CardContent className="p-[16px] flex flex-col gap-4 bg-card">
                 <div className="flex justify-between items-start mb-2 border-b pb-2">
                   <div>
-                    <h4 className="font-bold text-[16px]">{r.expand?.patient_id?.name}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">{r.title}</p>
+                    <h4
+                      className={cn(
+                        'font-bold text-[16px]',
+                        r.status === 'completed' && 'line-through text-muted-foreground',
+                      )}
+                    >
+                      {r.expand?.patient_id?.name}
+                    </h4>
+                    <p
+                      className={cn(
+                        'text-sm mt-1',
+                        r.status === 'completed'
+                          ? 'line-through text-muted-foreground'
+                          : 'text-muted-foreground',
+                      )}
+                    >
+                      {r.title}
+                    </p>
                   </div>
-                  <Badge variant={r.status === 'completed' ? 'default' : 'outline'}>
-                    {STATUS_LABELS[r.status]}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge
+                      variant={r.status === 'completed' ? 'default' : 'outline'}
+                      className={cn(
+                        r.status === 'completed' && 'bg-success hover:bg-success/90',
+                        urgency === 'overdue' && 'border-destructive text-destructive',
+                        urgency === 'upcoming' && 'border-orange-500 text-orange-500',
+                      )}
+                    >
+                      {STATUS_LABELS[r.status]}
+                    </Badge>
+                    {urgency === 'overdue' && (
+                      <span className="text-[10px] font-bold text-destructive uppercase">
+                        Atrasado
+                      </span>
+                    )}
+                    {urgency === 'upcoming' && (
+                      <span className="text-[10px] font-bold text-orange-500 uppercase">
+                        Próximo
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>

@@ -60,13 +60,17 @@ export default function Lembretes() {
     setEditingReminder(undefined)
   }
 
-  const handleComplete = async (id: string) => {
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed'
     try {
-      await updateReminder(id, { status: 'completed' })
+      await updateReminder(id, { status: newStatus as 'completed' | 'pending' })
       toast({
-        title: 'Lembrete concluído',
+        title: newStatus === 'completed' ? 'Lembrete concluído' : 'Lembrete reativado',
         duration: 3000,
-        className: 'bg-success text-success-foreground',
+        className:
+          newStatus === 'completed'
+            ? 'bg-success text-success-foreground'
+            : 'bg-primary text-primary-foreground',
       })
       loadData()
     } catch (error) {
@@ -144,7 +148,7 @@ export default function Lembretes() {
         reminders={reminders}
         isLoading={isLoading}
         onEdit={handleOpenDialog}
-        onComplete={handleComplete}
+        onToggleStatus={handleToggleStatus}
         onDelete={handleDelete}
         onCreateNew={() => handleOpenDialog()}
       />

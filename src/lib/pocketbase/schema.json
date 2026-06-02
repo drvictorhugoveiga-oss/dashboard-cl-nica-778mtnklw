@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-24T20:18:07.320Z",
+  "generatedAt": "2026-06-02T00:29:01.891Z",
   "collections": [
     {
       "name": "users",
@@ -207,6 +207,12 @@
           "required": false,
           "system": false,
           "collectionRef": "users"
+        },
+        {
+          "name": "birth_date",
+          "type": "date",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
@@ -307,11 +313,11 @@
       "name": "professional_costs",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "list": "@request.auth.role = 'admin'",
+        "view": "@request.auth.role = 'admin'",
+        "create": "@request.auth.role = 'admin'",
+        "update": "@request.auth.role = 'admin'",
+        "delete": "@request.auth.role = 'admin'"
       },
       "fields": [
         {
@@ -324,7 +330,7 @@
         {
           "name": "plan_id",
           "type": "relation",
-          "required": true,
+          "required": false,
           "system": false,
           "collectionRef": "plans"
         },
@@ -351,6 +357,24 @@
         {
           "name": "cost_per_session",
           "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "paid_status",
+          "type": "bool",
           "required": false,
           "system": false
         }
@@ -439,8 +463,8 @@
       "name": "system_config",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.role = 'admin'",
-        "view": "@request.auth.id != '' && @request.auth.role = 'admin'",
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
         "create": "@request.auth.id != '' && @request.auth.role = 'admin'",
         "update": "@request.auth.id != '' && @request.auth.role = 'admin'",
         "delete": "@request.auth.id != '' && @request.auth.role = 'admin'"
@@ -774,11 +798,11 @@
       "name": "operational_costs",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
+        "list": "@request.auth.role = 'admin'",
+        "view": "@request.auth.role = 'admin'",
         "create": "@request.auth.role = 'admin'",
-        "update": "@request.auth.role = 'admin'",
-        "delete": "@request.auth.role = 'admin'"
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
       },
       "fields": [
         {
@@ -833,6 +857,12 @@
             "Marketing",
             "Outros"
           ]
+        },
+        {
+          "name": "paid_status",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": ["CREATE INDEX idx_operational_costs_date ON operational_costs (date)"]
@@ -891,8 +921,8 @@
         "list": "@request.auth.role = 'admin'",
         "view": "@request.auth.role = 'admin'",
         "create": "@request.auth.role = 'admin'",
-        "update": "@request.auth.role = 'admin'",
-        "delete": "@request.auth.role = 'admin'"
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
       },
       "fields": [
         {

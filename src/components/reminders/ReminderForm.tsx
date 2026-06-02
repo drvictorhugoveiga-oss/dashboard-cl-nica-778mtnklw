@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '@/hooks/use-auth'
 import { createReminder, updateReminder, type Reminder } from '@/services/reminders'
+import pb from '@/lib/pocketbase/client'
 import { getPatients, type Patient } from '@/services/patients'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
@@ -91,11 +92,15 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true)
     try {
-      const payload = {
+      const payload: any = {
         ...data,
         scheduled_date: data.scheduled_date.toISOString(),
-        created_by: user.id,
       }
+
+      if (!initialData) {
+        payload.created_by = user?.id || pb.authStore.record?.id || ''
+      }
+
       if (initialData) {
         await updateReminder(initialData.id, payload)
         toast({
