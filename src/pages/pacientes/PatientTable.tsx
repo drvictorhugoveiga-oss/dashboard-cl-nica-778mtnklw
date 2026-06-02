@@ -25,6 +25,7 @@ import { useState } from 'react'
 import { deletePatient } from '@/services/patients'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
 import { toast } from 'sonner'
+import { useAuth } from '@/hooks/use-auth'
 
 type Props = {
   patients: Patient[]
@@ -63,6 +64,9 @@ const getStatusBadge = (status: string) => {
 export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDelete }: Props) {
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const { usuario } = useAuth()
+
+  const isStaff = usuario?.role === 'staff' || usuario?.role_name === 'staff'
 
   const confirmDelete = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -98,13 +102,14 @@ export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDe
         <p className="text-sm text-muted-foreground mt-1 mb-4">
           Ajuste os filtros ou adicione um novo paciente.
         </p>
-        <Button onClick={onCreate}>
-          <Plus className="mr-2 h-4 w-4" /> Novo Paciente
-        </Button>
+        {!isStaff && (
+          <Button onClick={onCreate}>
+            <Plus className="mr-2 h-4 w-4" /> Novo Paciente
+          </Button>
+        )}
       </div>
     )
   }
-
   return (
     <div className="w-full">
       {/* Mobile Card Layout (<480px) */}
@@ -148,24 +153,28 @@ export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDe
                 className="text-muted-foreground hover:text-foreground"
                 onClick={() => onView(p)}
               >
-                <Eye className="size-4 mr-1" /> Detalhes
+                <Eye className="size-4 mr-1" /> Ver
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-primary hover:text-primary hover:bg-primary/10"
-                onClick={() => onEdit(p)}
-              >
-                <Edit2 className="size-4 mr-1" /> Editar
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => setPatientToDelete(p)}
-              >
-                <Trash2 className="size-4 mr-1" /> Deletar
-              </Button>
+              {!isStaff && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-primary hover:text-primary hover:bg-primary/10"
+                    onClick={() => onEdit(p)}
+                  >
+                    <Edit2 className="size-4 mr-1" /> Editar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => setPatientToDelete(p)}
+                  >
+                    <Trash2 className="size-4 mr-1" /> Excluir
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         ))}
@@ -206,34 +215,39 @@ export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDe
                   <div className="flex justify-end gap-1">
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      size="sm"
+                      className="h-8 px-2 text-muted-foreground hover:text-foreground"
                       onClick={() => onView(p)}
-                      title="Ver Detalhes"
+                      title="Ver"
                     >
-                      <Eye className="size-4" />
+                      <Eye className="size-4 mr-1" />
+                      Ver
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                      onClick={() => onEdit(p)}
-                      title="Editar"
-                    >
-                      <Edit2 className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setPatientToDelete(p)
-                      }}
-                      title="Deletar"
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {!isStaff && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                          onClick={() => onEdit(p)}
+                          title="Editar"
+                        >
+                          <Edit2 className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPatientToDelete(p)
+                          }}
+                          title="Excluir"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

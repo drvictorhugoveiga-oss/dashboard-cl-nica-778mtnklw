@@ -34,14 +34,15 @@ const SkeletonRow = () => (
   </div>
 )
 
-import { OperationalCostsList } from './configuracoes/OperationalCostsList'
 import { NoteTemplatesList } from './configuracoes/NoteTemplatesList'
+import { UserProfile } from './configuracoes/UserProfile'
 
 export default function Configuracoes() {
-  const { usuario } = useAuth()
+  const { usuario, user } = useAuth()
+  const currentUser = usuario || user
   const { toast } = useToast()
 
-  const isAdmin = usuario?.role === 'admin'
+  const isAdmin = currentUser?.role === 'admin'
 
   const [plans, setPlans] = useState<Plan[]>([])
   const [loadingPlans, setLoadingPlans] = useState(true)
@@ -173,8 +174,14 @@ export default function Configuracoes() {
         </p>
       </div>
 
-      <Tabs defaultValue={isAdmin ? 'plans' : 'note_templates'} className="w-full">
+      <Tabs defaultValue="profile" className="w-full">
         <TabsList className="flex flex-wrap w-full mb-6 h-auto p-1 justify-start gap-2 bg-transparent">
+          <TabsTrigger
+            value="profile"
+            className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card"
+          >
+            Perfil
+          </TabsTrigger>
           {isAdmin && (
             <TabsTrigger
               value="plans"
@@ -200,18 +207,16 @@ export default function Configuracoes() {
             </TabsTrigger>
           )}
           <TabsTrigger
-            value="operational_costs"
-            className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card"
-          >
-            Despesas Detalhadas
-          </TabsTrigger>
-          <TabsTrigger
             value="note_templates"
             className="py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-card"
           >
             Modelos de Notas
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="profile" className="space-y-4 outline-none">
+          <UserProfile />
+        </TabsContent>
 
         {isAdmin && (
           <TabsContent value="plans" className="space-y-4 outline-none">
@@ -387,20 +392,6 @@ export default function Configuracoes() {
             </Card>
           </TabsContent>
         )}
-
-        <TabsContent value="operational_costs" className="space-y-4 outline-none">
-          <Card className="shadow-subtle border-border/50">
-            <CardHeader>
-              <CardTitle>Despesas Detalhadas</CardTitle>
-              <CardDescription>
-                Acompanhe e categorize as despesas operacionais da clínica.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <OperationalCostsList isAdmin={isAdmin} />
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="note_templates" className="space-y-4 outline-none">
           <Card className="shadow-subtle border-border/50">

@@ -14,8 +14,24 @@ import FinancasPage from './pages/financas/FinancasPage'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Login from './pages/Login'
-import { AuthProvider } from './hooks/use-auth'
+import { AuthProvider, useAuth } from './hooks/use-auth'
 import { ProtectedRoute } from './components/ProtectedRoute'
+
+const FinanceRoute = ({ children }: { children: React.ReactNode }) => {
+  const { temPermissao } = useAuth()
+  if (!temPermissao('finance', 'view')) {
+    return <Navigate to="/dashboard" replace />
+  }
+  return <>{children}</>
+}
+
+const FinancialReportsRoute = ({ children }: { children: React.ReactNode }) => {
+  const { temPermissao } = useAuth()
+  if (!temPermissao('financial_reports', 'view')) {
+    return <Navigate to="/dashboard" replace />
+  }
+  return <>{children}</>
+}
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
@@ -34,9 +50,23 @@ const App = () => (
               <Route path="/profissionais" element={<Profissionais />} />
               <Route path="/lembretes" element={<Lembretes />} />
               <Route path="/notas-clinicas" element={<NotasClinicas />} />
-              <Route path="/financas" element={<FinancasPage />} />
+              <Route
+                path="/financas"
+                element={
+                  <FinanceRoute>
+                    <FinancasPage />
+                  </FinanceRoute>
+                }
+              />
               <Route path="/configuracoes" element={<Configuracoes />} />
-              <Route path="/relatorios-financeiros" element={<RelatoriosFinanceiros />} />
+              <Route
+                path="/relatorios-financeiros"
+                element={
+                  <FinancialReportsRoute>
+                    <RelatoriosFinanceiros />
+                  </FinancialReportsRoute>
+                }
+              />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />

@@ -1,10 +1,16 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from './AppSidebar'
-import { Bell, User } from 'lucide-react'
+import { User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { NotificationDropdown } from './NotificationDropdown'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useAuth } from '@/hooks/use-auth'
+import pb from '@/lib/pocketbase/client'
 
 export default function Layout() {
+  const { usuario, user } = useAuth()
+  const currentUser = usuario || user
   const location = useLocation()
 
   const getPageTitle = () => {
@@ -34,16 +40,16 @@ export default function Layout() {
             <h1 className="text-xl font-bold tracking-tight text-foreground">{getPageTitle()}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Bell className="size-5" />
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-destructive" />
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full bg-muted border ml-2">
-              <User className="size-5" />
+            <NotificationDropdown />
+            <Button variant="ghost" size="icon" className="rounded-full ml-2 relative" asChild>
+              <Avatar className="size-8 cursor-pointer border border-border/50">
+                <AvatarImage
+                  src={currentUser?.avatar ? pb.files.getURL(currentUser, currentUser.avatar) : ''}
+                />
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                  {currentUser?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
             </Button>
           </div>
         </header>

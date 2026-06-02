@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Navigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -19,8 +20,9 @@ import { PlanDeleteDialog } from '@/components/plans/PlanDeleteDialog'
 import { useAuth } from '@/hooks/use-auth'
 
 export default function Planos() {
-  const { user } = useAuth()
-  const isAdmin = user?.role === 'admin'
+  const { user, usuario } = useAuth()
+  const currentUser = user || usuario
+  const isAdmin = currentUser?.role === 'admin'
 
   const [plans, setPlans] = useState<Plan[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -31,6 +33,7 @@ export default function Planos() {
   const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null)
 
   const loadPlans = useCallback(async () => {
+    if (!isAdmin) return
     try {
       setError(null)
       const data = await getPlans()
@@ -47,7 +50,7 @@ export default function Planos() {
   }, [loadPlans])
 
   useRealtime('plans', () => {
-    loadPlans()
+    if (isAdmin) loadPlans()
   })
 
   const handleEdit = (plan: Plan) => {
@@ -62,6 +65,10 @@ export default function Planos() {
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />
   }
 
   if (error) {

@@ -157,7 +157,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (
         resource === 'plans' ||
         resource === 'professionals' ||
-        resource === 'financial_reports'
+        resource === 'financial_reports' ||
+        resource === 'finance'
       ) {
         return false
       }

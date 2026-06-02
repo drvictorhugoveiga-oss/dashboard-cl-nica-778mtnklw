@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { isBefore, isAfter, addDays, startOfDay, parseISO } from 'date-fns'
-import { Edit2, CheckCircle2, Trash2, CalendarClock } from 'lucide-react'
+import { Edit2, CheckCircle2, Trash2, CalendarClock, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -24,6 +25,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { TYPE_LABELS, STATUS_LABELS } from './constants'
 import type { Reminder } from '@/services/reminders'
 import { cn } from '@/lib/utils'
@@ -59,6 +67,8 @@ export function ReminderList({
   onDelete,
   onCreateNew,
 }: Props) {
+  const [viewingReminder, setViewingReminder] = useState<Reminder | null>(null)
+
   if (isLoading) {
     return (
       <div className="space-y-4 w-full">
@@ -89,6 +99,16 @@ export function ReminderList({
 
   const renderActions = (r: Reminder) => (
     <div className="flex items-center gap-1 justify-end">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/20 font-medium"
+        onClick={() => setViewingReminder(r)}
+        title="Ver"
+      >
+        <Eye className="size-4 mr-1" />
+        Ver
+      </Button>
       {(r.status === 'pending' || r.status === 'completed') && (
         <Button
           variant="ghost"
@@ -344,6 +364,41 @@ export function ReminderList({
           )
         })}
       </div>
+
+      <Dialog open={!!viewingReminder} onOpenChange={(open) => !open && setViewingReminder(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Lembrete</DialogTitle>
+            <DialogDescription>Informações completas sobre o lembrete.</DialogDescription>
+          </DialogHeader>
+          {viewingReminder && (
+            <div className="grid gap-4 py-4">
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-muted-foreground">Paciente</span>
+                <p className="font-medium">{viewingReminder.expand?.patient_id?.name || '-'}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-muted-foreground">Tipo</span>
+                <p className="font-medium">{TYPE_LABELS[viewingReminder.type]}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-muted-foreground">Título</span>
+                <p className="font-medium">{viewingReminder.title}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-muted-foreground">Data Agendada</span>
+                <p className="font-medium">{formatDate(viewingReminder.scheduled_date)}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-muted-foreground">Descrição</span>
+                <p className="text-sm bg-muted/50 p-3 rounded-md min-h-[60px] whitespace-pre-wrap">
+                  {viewingReminder.description || 'Nenhuma descrição fornecida.'}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

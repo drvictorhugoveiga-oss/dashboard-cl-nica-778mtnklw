@@ -46,7 +46,7 @@ export function AppSidebar() {
     Profissionais: { resource: 'professionals', action: 'view' },
     'Notas Clínicas': { resource: 'patients', action: 'manage' },
     Lembretes: { resource: 'reminders', action: 'manage' },
-    Finanças: { resource: 'settings', action: 'access' },
+    Finanças: { resource: 'finance', action: 'view' },
     'Relatórios Financeiros': { resource: 'financial_reports', action: 'view' },
     Configurações: { resource: 'settings', action: 'access' },
   }
