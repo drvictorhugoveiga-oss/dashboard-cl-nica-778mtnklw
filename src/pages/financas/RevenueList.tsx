@@ -14,7 +14,7 @@ import { Plus, Edit2, Trash2, CheckCircle2, Circle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { RevenueFormModal } from './RevenueFormModal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { format, parseISO } from 'date-fns'
+
 import {
   Select,
   SelectContent,
@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 
-export function RevenueList({ isAdmin }: { isAdmin: boolean }) {
+export function RevenueList({ isAdmin, period }: { isAdmin: boolean; period: string }) {
   const [revenues, setRevenues] = useState<Revenue[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -32,7 +32,6 @@ export function RevenueList({ isAdmin }: { isAdmin: boolean }) {
   const { toast } = useToast()
 
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [monthFilter, setMonthFilter] = useState(() => format(new Date(), 'yyyy-MM'))
 
   const loadData = async () => {
     try {
@@ -53,10 +52,10 @@ export function RevenueList({ isAdmin }: { isAdmin: boolean }) {
   const filteredRevenues = useMemo(() => {
     return revenues.filter((r) => {
       const matchCat = categoryFilter === 'all' || r.category === categoryFilter
-      const matchMonth = !monthFilter || r.date.startsWith(monthFilter)
+      const matchMonth = !period || (r.date && r.date.startsWith(period))
       return matchCat && matchMonth
     })
-  }, [revenues, categoryFilter, monthFilter])
+  }, [revenues, categoryFilter, period])
 
   const totalValue = useMemo(() => {
     return filteredRevenues.reduce((sum, item) => sum + item.value, 0)
@@ -107,12 +106,6 @@ export function RevenueList({ isAdmin }: { isAdmin: boolean }) {
                 <SelectItem value="Outros">Outros</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              type="month"
-              value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value)}
-              className="w-[150px]"
-            />
           </div>
         </div>
 
@@ -158,7 +151,9 @@ export function RevenueList({ isAdmin }: { isAdmin: boolean }) {
             ) : (
               filteredRevenues.map((item) => (
                 <TableRow key={item.id} className="hover:bg-slate-50 transition-colors">
-                  <TableCell>{format(parseISO(item.date), 'dd/MM/yyyy')}</TableCell>
+                  <TableCell>
+                    {item.date ? item.date.substring(0, 10).split('-').reverse().join('/') : '-'}
+                  </TableCell>
                   <TableCell className="font-medium">{item.description}</TableCell>
                   <TableCell>{item.category}</TableCell>
                   <TableCell className="text-center">

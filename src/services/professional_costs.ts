@@ -42,3 +42,14 @@ export const updateProfessionalCost = async (id: string, data: any) => {
     throw e
   }
 }
+
+export const deleteProfessionalCost = async (id: string) => {
+  try {
+    const res = await pb.collection('professional_costs').delete(id)
+    await logFrontendAudit('delete', 'professional_costs', id, 'success')
+    return res
+  } catch (e) {
+    await logFrontendAudit('delete', 'professional_costs', id, 'denied')
+    throw e
+  }
+}

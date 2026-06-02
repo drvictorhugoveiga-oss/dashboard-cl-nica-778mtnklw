@@ -45,7 +45,7 @@ export function OperationalCostsDialog({
       setFormData({
         name: item.name,
         cost_value: item.cost_value.toString(),
-        date: item.date ? item.date.split(' ')[0] : '',
+        date: item.date ? item.date.substring(0, 10) : '',
         category: item.category || 'Outros',
         paid_status: item.paid_status,
         description: item.description || '',
@@ -66,7 +66,11 @@ export function OperationalCostsDialog({
     e.preventDefault()
     setLoading(true)
     try {
-      const data = { ...formData, cost_value: parseFloat(formData.cost_value) }
+      const data = {
+        ...formData,
+        cost_value: parseFloat(formData.cost_value),
+        date: `${formData.date} 12:00:00.000Z`,
+      }
       if (item) {
         await pb.collection('operational_costs').update(item.id, data)
         toast({ title: 'Atualizado com sucesso' })

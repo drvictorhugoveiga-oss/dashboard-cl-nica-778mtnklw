@@ -69,7 +69,7 @@ export function RevenueFormModal({
         form.reset({
           description: item.description,
           value: item.value,
-          date: item.date.split('T')[0],
+          date: item.date.substring(0, 10),
           category: item.category,
           received_status: item.received_status,
         })
@@ -87,7 +87,7 @@ export function RevenueFormModal({
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
     try {
-      const dateToSave = new Date(values.date + 'T12:00:00Z').toISOString()
+      const dateToSave = `${values.date} 12:00:00.000Z`
       if (item) {
         await updateRevenue(item.id, { ...values, date: dateToSave })
         toast({ title: 'Ganho atualizado', className: 'bg-success text-success-foreground' })

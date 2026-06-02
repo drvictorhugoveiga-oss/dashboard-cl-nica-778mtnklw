@@ -18,9 +18,8 @@ import { Plus, Edit2, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ProfessionalCostFormModal } from './ProfessionalCostFormModal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { format, parseISO } from 'date-fns'
 
-export function ProfessionalCostsList({ isAdmin }: { isAdmin: boolean }) {
+export function ProfessionalCostsList({ isAdmin, period }: { isAdmin: boolean; period: string }) {
   const [costs, setCosts] = useState<ProfessionalCost[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -49,10 +48,10 @@ export function ProfessionalCostsList({ isAdmin }: { isAdmin: boolean }) {
   }, [costs])
 
   const sortedCosts = useMemo(() => {
-    return [...costs].sort(
-      (a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
-    )
-  }, [costs])
+    return costs
+      .filter((cost) => !period || (cost.date && cost.date.startsWith(period)))
+      .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+  }, [costs, period])
 
   const handleDelete = async (id: string) => {
     if (!isAdmin) return
@@ -127,7 +126,7 @@ export function ProfessionalCostsList({ isAdmin }: { isAdmin: boolean }) {
               sortedCosts.map((cost) => (
                 <TableRow key={cost.id} className="hover:bg-slate-50 transition-colors">
                   <TableCell>
-                    {cost.date ? format(parseISO(cost.date), 'dd/MM/yyyy') : '-'}
+                    {cost.date ? cost.date.substring(0, 10).split('-').reverse().join('/') : '-'}
                   </TableCell>
                   <TableCell className="font-medium">
                     {cost.expand?.professional_id?.name || 'Desconhecido'}

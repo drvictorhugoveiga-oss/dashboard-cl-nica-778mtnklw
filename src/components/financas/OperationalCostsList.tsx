@@ -12,12 +12,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
-import { format } from 'date-fns'
+
 import { OperationalCostsDialog } from './OperationalCostsDialog'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
 
-export function OperationalCostsList() {
+export function OperationalCostsList({ isAdmin, period }: { isAdmin?: boolean; period?: string }) {
   const [data, setData] = useState<any[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
@@ -47,6 +47,8 @@ export function OperationalCostsList() {
     }
   }
 
+  const filteredData = data.filter((item) => !period || (item.date && item.date.startsWith(period)))
+
   const handleToggleStatus = async (item: any) => {
     try {
       await pb.collection('operational_costs').update(item.id, { paid_status: !item.paid_status })
@@ -59,14 +61,16 @@ export function OperationalCostsList() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Gastos Operacionais</CardTitle>
-        <Button
-          onClick={() => {
-            setEditingItem(null)
-            setDialogOpen(true)
-          }}
-        >
-          <Plus className="size-4 mr-2" /> Novo Gasto
-        </Button>
+        {isAdmin !== false && (
+          <Button
+            onClick={() => {
+              setEditingItem(null)
+              setDialogOpen(true)
+            }}
+          >
+            <Plus className="size-4 mr-2" /> Novo Gasto
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         <Table>
@@ -81,9 +85,11 @@ export function OperationalCostsList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((item) => (
+            {filteredData.map((item) => (
               <TableRow key={item.id}>
-                <TableCell>{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : '-'}</TableCell>
+                <TableCell>
+                  {item.date ? item.date.substring(0, 10).split('-').reverse().join('/') : '-'}
+                </TableCell>
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{item.category || 'Outros'}</Badge>
@@ -106,28 +112,32 @@ export function OperationalCostsList() {
                   </button>
                 </TableCell>
                 <TableCell className="text-right space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setEditingItem(item)
-                      setDialogOpen(true)
-                    }}
-                  >
-                    <Edit2 className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(item.id)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                  {isAdmin !== false && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditingItem(item)
+                          setDialogOpen(true)
+                        }}
+                      >
+                        <Edit2 className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(item.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
-            {data.length === 0 && (
+            {filteredData.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                   Nenhum registro encontrado.

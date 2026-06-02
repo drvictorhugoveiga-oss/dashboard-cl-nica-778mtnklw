@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { startOfMonth, endOfMonth, subMonths, eachMonthOfInterval } from 'date-fns'
 import pb from '@/lib/pocketbase/client'
+import { useRealtime } from '@/hooks/use-realtime'
 
 export type Period = 'this_month' | 'last_3' | 'last_6' | 'last_12' | 'custom'
 export type ViewType = 'general' | 'monthly'
@@ -21,13 +22,13 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
     try {
       setLoading(true)
       setError(null)
-      const [patientsRes, costsRes, opCostsRes, revenueRes] = await Promise.all([
-        pb.collection('patients').getFullList({ expand: 'plan_id' }),
-        pb.collection('professional_costs').getFullList({ expand: 'professional_id,plan_id' }),
-        pb.collection('operational_costs').getFullList(),
-        pb.collection('revenue').getFullList(),
-      ])
-      setData({ patients: patientsRes, costs: costsRes, opCosts: opCostsRes, revenue: revenueRes })
+      const res = await pb.send('/backend/v1/financial-reports', { method: 'GET' })
+      setData({
+        patients: res.patients || [],
+        costs: res.professional_costs || [],
+        opCosts: res.operational_costs || [],
+        revenue: res.revenue || [],
+      })
     } catch (err) {
       setError(err as Error)
     } finally {
@@ -38,6 +39,11 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  useRealtime('revenue', fetchData)
+  useRealtime('operational_costs', fetchData)
+  useRealtime('professional_costs', fetchData)
+  useRealtime('patients', fetchData)
 
   const computed = useMemo(() => {
     if (!data) return null
@@ -105,12 +111,34 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
     }))
 
     const filteredOpCosts = data.opCosts.filter((c) => {
+      if (!c.date) return false
       const d = new Date(c.date.replace(' ', 'T'))
       return d >= start && d <= end
     })
 
-    const totalGains = patientDetails.reduce((sum, p) => sum + p.gain, 0)
-    const totalProfLosses = patientDetails.reduce((sum, p) => sum + p.loss, 0)
+    const filteredProfCosts = data.costs.filter((c) => {
+      if (!c.date) return false
+      const d = new Date(c.date.replace(' ', 'T'))
+      return d >= start && d <= end
+    })
+
+    const filteredRevenue = data.revenue.filter((r) => {
+      if (!r.date) return false
+      const d = new Date(r.date.replace(' ', 'T'))
+      return d >= start && d <= end
+    })
+
+    const totalGainsCalc = patientDetails.reduce((sum, p) => sum + p.gain, 0)
+    const totalRevenueManual = filteredRevenue.reduce((sum, r) => sum + r.value, 0)
+
+    // Ensures manual entries correctly aggregate.
+    const totalGains = totalRevenueManual > 0 ? totalRevenueManual : totalGainsCalc
+
+    const totalProfLosses =
+      filteredProfCosts.length > 0
+        ? filteredProfCosts.reduce((sum, c) => sum + c.cost_per_month, 0)
+        : patientDetails.reduce((sum, p) => sum + p.loss, 0)
+
     const totalOpLosses = filteredOpCosts.reduce((sum, c) => sum + c.cost_value, 0)
     const totalLosses = totalProfLosses + totalOpLosses
 
@@ -136,6 +164,7 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
 
       const mRevenue = data.revenue
         .filter((r) => {
+          if (!r.date) return false
           const d = new Date(r.date.replace(' ', 'T'))
           return d >= mStart && d <= mEnd
         })
@@ -143,16 +172,27 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
 
       const mOpCosts = data.opCosts
         .filter((c) => {
+          if (!c.date) return false
           const d = new Date(c.date.replace(' ', 'T'))
           return d >= mStart && d <= mEnd
         })
         .reduce((sum, c) => sum + c.cost_value, 0)
 
+      const mProfCosts = data.costs
+        .filter((c) => {
+          if (!c.date) return false
+          const d = new Date(c.date.replace(' ', 'T'))
+          return d >= mStart && d <= mEnd
+        })
+        .reduce((sum, c) => sum + c.cost_per_month, 0)
+
+      const mTotalCosts = mOpCosts + mProfCosts
+
       return {
         monthLabel: `${MONTHS[m.getMonth()]}/${m.getFullYear()}`,
         revenue: mRevenue,
-        costs: mOpCosts,
-        net: mRevenue - mOpCosts,
+        costs: mTotalCosts,
+        net: mRevenue - mTotalCosts,
       }
     })
 

@@ -80,7 +80,7 @@ export function ProfessionalCostFormModal({
         form.reset({
           professional_id: item.professional_id,
           cost_per_month: item.cost_per_month,
-          date: item.date ? item.date.split('T')[0] : format(new Date(), 'yyyy-MM-dd'),
+          date: item.date ? item.date.substring(0, 10) : format(new Date(), 'yyyy-MM-dd'),
           description: item.description || '',
           paid_status: !!item.paid_status,
         })
@@ -98,7 +98,7 @@ export function ProfessionalCostFormModal({
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
     try {
-      const dateToSave = new Date(values.date + 'T12:00:00Z').toISOString()
+      const dateToSave = `${values.date} 12:00:00.000Z`
       if (item) {
         await updateProfessionalCost(item.id, { ...values, date: dateToSave })
         toast({ title: 'Custo atualizado', className: 'bg-success text-success-foreground' })
