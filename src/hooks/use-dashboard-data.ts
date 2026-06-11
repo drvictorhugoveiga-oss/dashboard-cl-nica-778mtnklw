@@ -91,12 +91,14 @@ export function useDashboardData() {
     try {
       let costsPromise = Promise.resolve<any[]>([])
       let opCostsPromise = Promise.resolve<any[]>([])
+      let revenuePromise = Promise.resolve<any[]>([])
 
       if (isAdmin) {
         costsPromise = pb
           .collection('professional_costs')
           .getFullList({ expand: 'professional_id,plan_id' })
         opCostsPromise = pb.collection('operational_costs').getFullList()
+        revenuePromise = pb.collection('revenue').getFullList()
       }
 
       const thisMonth = new Date()
@@ -104,11 +106,12 @@ export function useDashboardData() {
       thisMonth.setHours(0, 0, 0, 0)
       const thisMonthStr = thisMonth.toISOString().replace('T', ' ')
 
-      const [patients, costs, plans, opCosts, reminders, notes] = await Promise.all([
+      const [patients, costs, plans, opCosts, revenues, reminders, notes] = await Promise.all([
         pb.collection('patients').getFullList({ expand: 'plan_id', sort: '-created' }),
         costsPromise,
         pb.collection('plans').getFullList(),
         opCostsPromise,
+        revenuePromise,
         pb.collection('reminders').getFullList({
           filter: 'status = "pending"',
           expand: 'patient_id',
@@ -121,25 +124,37 @@ export function useDashboardData() {
       ])
 
       const activePatients = patients.filter((p) => p.status !== 'inactive')
-      const grossRevenue = activePatients.reduce(
-        (sum, p) => sum + (p.expand?.plan_id?.price || 0),
-        0,
-      )
-
-      const professionalCosts = activePatients.reduce((sum, p) => {
-        const pCosts = costs
-          .filter((c) => c.plan_id === p.plan_id)
-          .reduce((s, c) => s + c.cost_per_month, 0)
-        return sum + pCosts
-      }, 0)
 
       const today = new Date()
+      const currentMonth = today.getMonth()
+      const currentYear = today.getFullYear()
+
+      const thisMonthRevenue = revenues
+        .filter((r) => {
+          if (!r.date) return false
+          const d = new Date(r.date.replace(' ', 'T'))
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear
+        })
+        .reduce((sum, r) => sum + r.value, 0)
+
+      const thisMonthProfCosts = costs
+        .filter((c) => {
+          if (!c.date) return false
+          const d = new Date(c.date.replace(' ', 'T'))
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear
+        })
+        .reduce((sum, c) => sum + (c.cost_per_month || c.cost_per_session || 0), 0)
+
       const thisMonthOpCosts = opCosts
         .filter((c) => {
-          const d = new Date(c.date)
-          return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()
+          if (!c.date) return false
+          const d = new Date(c.date.replace(' ', 'T'))
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear
         })
         .reduce((sum, c) => sum + c.cost_value, 0)
+
+      const grossRevenue = thisMonthRevenue
+      const professionalCosts = thisMonthProfCosts
 
       const netProfit = grossRevenue - professionalCosts - thisMonthOpCosts
       const netMargin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0
@@ -147,14 +162,19 @@ export function useDashboardData() {
       const planStats = plans
         .map((plan) => {
           const planPatients = activePatients.filter((p) => p.plan_id === plan.id)
+          const newPatientsThisMonth = planPatients.filter((p) => {
+            if (!p.contract_start) return false
+            const d = new Date(p.contract_start.replace(' ', 'T'))
+            return d.getMonth() === currentMonth && d.getFullYear() === currentYear
+          })
           return {
             plan: plan.name,
             count: planPatients.length,
-            revenue: planPatients.length * (plan.price || 0),
+            revenue: newPatientsThisMonth.length * (plan.price || 0),
           }
         })
         .filter((p) => p.count > 0)
-        .sort((a, b) => b.revenue - a.revenue)
+        .sort((a, b) => b.count - a.count)
 
       const genderCounts = { male: 0, female: 0, other: 0 }
       activePatients.forEach((p) => {
@@ -190,23 +210,27 @@ export function useDashboardData() {
       const financialTimeline = months.map((m) => {
         const mStart = startOfMonth(m)
         const mEnd = endOfMonth(m)
-        let mRev = 0
-        let mProfCost = 0
-        patients.forEach((p) => {
-          const plan = p.expand?.plan_id
-          if (!plan) return
-          const pStart = p.contract_start ? new Date(p.contract_start.replace(' ', 'T')) : null
-          const pEnd = p.contract_end ? new Date(p.contract_end.replace(' ', 'T')) : null
-          if (p.status !== 'inactive' && (!pStart || pStart <= mEnd) && (!pEnd || pEnd >= mStart)) {
-            mRev += plan.price
-            mProfCost += costs
-              .filter((c) => c.plan_id === plan.id)
-              .reduce((s, c) => s + c.cost_per_month, 0)
-          }
-        })
+
+        const mRev = revenues
+          .filter((r) => {
+            if (!r.date) return false
+            const d = new Date(r.date.replace(' ', 'T'))
+            return d >= mStart && d <= mEnd
+          })
+          .reduce((sum, r) => sum + r.value, 0)
+
+        const mProfCost = costs
+          .filter((c) => {
+            if (!c.date) return false
+            const d = new Date(c.date.replace(' ', 'T'))
+            return d >= mStart && d <= mEnd
+          })
+          .reduce((sum, c) => sum + (c.cost_per_month || c.cost_per_session || 0), 0)
+
         const mOpCost = opCosts
           .filter((c) => {
-            const d = new Date(c.date)
+            if (!c.date) return false
+            const d = new Date(c.date.replace(' ', 'T'))
             return d >= mStart && d <= mEnd
           })
           .reduce((s, c) => s + c.cost_value, 0)
@@ -218,7 +242,6 @@ export function useDashboardData() {
         }
       })
 
-      const currentMonth = new Date().getMonth()
       const todayZero = new Date()
       todayZero.setHours(0, 0, 0, 0)
       const in30Days = new Date(todayZero)
@@ -331,6 +354,7 @@ export function useDashboardData() {
   useRealtime('plans', fetchData)
   useRealtime('professional_costs', fetchData, isAdmin)
   useRealtime('operational_costs', fetchData, isAdmin)
+  useRealtime('revenue', fetchData, isAdmin)
 
   const handleRenew = async (patientId: string, planId: string) => {
     try {

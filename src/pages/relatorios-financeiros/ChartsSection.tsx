@@ -36,7 +36,7 @@ export function ChartsSection({ data }: { data: any }) {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Lucro por Plano</CardTitle>
+            <CardTitle>Receita por Categoria</CardTitle>
           </CardHeader>
           <CardContent>
             {profitPerPlan.length > 0 ? (

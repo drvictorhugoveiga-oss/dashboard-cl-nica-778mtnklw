@@ -61,55 +61,6 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
 
     const months = eachMonthOfInterval({ start, end })
 
-    // General View Logic
-    const patientDetails = data.patients
-      .map((p) => {
-        const plan = p.expand?.plan_id
-        const pStart = p.contract_start ? new Date(p.contract_start.replace(' ', 'T')) : null
-        const pEnd = p.contract_end ? new Date(p.contract_end.replace(' ', 'T')) : null
-
-        let activeMonths = 0
-        months.forEach((m) => {
-          const mStart = startOfMonth(m)
-          const mEnd = endOfMonth(m)
-          if (p.status !== 'inactive' && (!pStart || pStart <= mEnd) && (!pEnd || pEnd >= mStart)) {
-            activeMonths++
-          }
-        })
-
-        const gain = (plan?.price || 0) * activeMonths
-        const monthlyProfCost = data.costs
-          .filter((c) => c.plan_id === plan?.id)
-          .reduce((sum, c) => sum + c.cost_per_month, 0)
-        const loss = monthlyProfCost * activeMonths
-
-        return {
-          id: p.id,
-          patientName: p.name,
-          planName: plan?.name || 'Sem Plano',
-          activeMonths,
-          gain,
-          loss,
-          netProfit: gain - loss,
-        }
-      })
-      .filter((p) => p.activeMonths > 0)
-      .sort((a, b) => b.netProfit - a.netProfit)
-
-    const profitPerPlanMap = new Map<string, number>()
-    patientDetails.forEach((p) => {
-      if (p.planName !== 'Sem Plano') {
-        profitPerPlanMap.set(p.planName, (profitPerPlanMap.get(p.planName) || 0) + p.netProfit)
-      }
-    })
-
-    const colors = ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#ec4899', '#eab308']
-    const profitPerPlan = Array.from(profitPerPlanMap.entries()).map(([name, value], i) => ({
-      name,
-      value: Math.max(0, value),
-      fill: colors[i % colors.length],
-    }))
-
     const filteredOpCosts = data.opCosts.filter((c) => {
       if (!c.date) return false
       const d = new Date(c.date.replace(' ', 'T'))
@@ -128,17 +79,59 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
       return d >= start && d <= end
     })
 
-    const totalGainsCalc = patientDetails.reduce((sum, p) => sum + p.gain, 0)
-    const totalRevenueManual = filteredRevenue.reduce((sum, r) => sum + r.value, 0)
+    // General View Logic
+    const patientDetails = data.patients
+      .map((p) => {
+        const plan = p.expand?.plan_id
+        const pStart = p.contract_start ? new Date(p.contract_start.replace(' ', 'T')) : null
 
-    // Ensures manual entries correctly aggregate.
-    const totalGains = totalRevenueManual > 0 ? totalRevenueManual : totalGainsCalc
+        let isNewContractInPeriod = false
+        if (pStart && pStart >= start && pStart <= end) {
+          isNewContractInPeriod = true
+        }
 
-    const totalProfLosses =
-      filteredProfCosts.length > 0
-        ? filteredProfCosts.reduce((sum, c) => sum + c.cost_per_month, 0)
-        : patientDetails.reduce((sum, p) => sum + p.loss, 0)
+        const gain = isNewContractInPeriod ? plan?.price || 0 : 0
+        const loss = filteredProfCosts
+          .filter((c) => c.plan_id === plan?.id)
+          .reduce((sum, c) => sum + (c.cost_per_month || c.cost_per_session || 0), 0)
 
+        // Count as active if they have contract starting or ending in period, or overlapping
+        const pEnd = p.contract_end ? new Date(p.contract_end.replace(' ', 'T')) : null
+        const isActiveInPeriod =
+          p.status !== 'inactive' && (!pStart || pStart <= end) && (!pEnd || pEnd >= start)
+        const activeMonths = isActiveInPeriod ? 1 : 0
+
+        return {
+          id: p.id,
+          patientName: p.name,
+          planName: plan?.name || 'Sem Plano',
+          activeMonths,
+          gain,
+          loss,
+          netProfit: gain - loss,
+        }
+      })
+      .filter((p) => p.activeMonths > 0)
+      .sort((a, b) => b.netProfit - a.netProfit)
+
+    const revenueByCategoryMap = new Map<string, number>()
+    filteredRevenue.forEach((r) => {
+      const cat = r.category || 'Outros'
+      revenueByCategoryMap.set(cat, (revenueByCategoryMap.get(cat) || 0) + r.value)
+    })
+
+    const colors = ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#ec4899', '#eab308']
+    const profitPerPlan = Array.from(revenueByCategoryMap.entries()).map(([name, value], i) => ({
+      name,
+      value: Math.max(0, value),
+      fill: colors[i % colors.length],
+    }))
+
+    const totalGains = filteredRevenue.reduce((sum, r) => sum + r.value, 0)
+    const totalProfLosses = filteredProfCosts.reduce(
+      (sum, c) => sum + (c.cost_per_month || c.cost_per_session || 0),
+      0,
+    )
     const totalOpLosses = filteredOpCosts.reduce((sum, c) => sum + c.cost_value, 0)
     const totalLosses = totalProfLosses + totalOpLosses
 
@@ -184,7 +177,7 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
           const d = new Date(c.date.replace(' ', 'T'))
           return d >= mStart && d <= mEnd
         })
-        .reduce((sum, c) => sum + c.cost_per_month, 0)
+        .reduce((sum, c) => sum + (c.cost_per_month || c.cost_per_session || 0), 0)
 
       const mTotalCosts = mOpCosts + mProfCosts
 

@@ -10,7 +10,7 @@ routerAdd('POST', '/backend/v1/auth/refresh-token', (e) => {
     )
     const record = $app.findRecordById('users', payload.user_id)
 
-    return $apis.recordAuthResponse($app, e, record)
+    return $apis.recordAuthResponse(e, record)
   } catch (err) {
     return e.json(401, { erro: 'Token inválido ou expirado' })
   }
