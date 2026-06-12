@@ -128,6 +128,7 @@ export function ProfissionaisTable({
             <div className="text-sm text-muted-foreground space-y-1 mb-4">
               <p>{item.email}</p>
               <p>{item.phone}</p>
+              {item.pix_key && <p>Pix: {item.pix_key}</p>}
             </div>
             <Actions item={item} />
           </Card>
@@ -145,6 +146,7 @@ export function ProfissionaisTable({
             <TableHead>Especialidade</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Telefone</TableHead>
+            <TableHead>Chave Pix</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
@@ -165,6 +167,7 @@ export function ProfissionaisTable({
               <TableCell>{getSpecialtyBadge(item.specialty)}</TableCell>
               <TableCell className="whitespace-nowrap">{item.email}</TableCell>
               <TableCell className="whitespace-nowrap">{item.phone}</TableCell>
+              <TableCell className="whitespace-nowrap">{item.pix_key || '-'}</TableCell>
               <TableCell>{getStatusBadge(item.status)}</TableCell>
               <TableCell className="text-right">
                 <Actions item={item} />

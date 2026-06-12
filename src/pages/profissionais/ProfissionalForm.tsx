@@ -44,6 +44,7 @@ const formSchema = z.object({
   ),
   email: z.string().email('Formato de email inválido').min(1, 'Email é obrigatório'),
   phone: z.string().min(1, 'Telefone é obrigatório'),
+  pix_key: z.string().optional(),
   status: z.enum(['active', 'inactive']),
   user_id: z.string().optional(),
 })
@@ -73,6 +74,7 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
       specialty: 'enfermagem',
       email: '',
       phone: '',
+      pix_key: '',
       status: 'active',
       user_id: '',
     },
@@ -87,6 +89,7 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
           specialty: item.specialty || 'enfermagem',
           email: item.email || '',
           phone: item.phone || '',
+          pix_key: item.pix_key || '',
           status: item.status || 'active',
           user_id: item.user_id || '',
         })
@@ -96,6 +99,7 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
           specialty: 'enfermagem',
           email: '',
           phone: '',
+          pix_key: '',
           status: 'active',
           user_id: '',
         })
@@ -235,6 +239,19 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
                 <FormItem>
                   <FormLabel className="text-sm">Telefone</FormLabel>
                   <FormControl>{renderInput(field, fieldState, '(11) 99999-9999')}</FormControl>
+                  <FormMessage className="text-xs text-destructive" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="pix_key"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Chave Pix (Opcional)</FormLabel>
+                  <FormControl>
+                    {renderInput(field, fieldState, 'CPF, Email, Celular ou Chave Aleatória')}
+                  </FormControl>
                   <FormMessage className="text-xs text-destructive" />
                 </FormItem>
               )}

@@ -6,6 +6,7 @@ export interface Professional {
   specialty: string
   email?: string
   phone?: string
+  pix_key?: string
   status: 'active' | 'inactive'
   user_id?: string
   created: string
