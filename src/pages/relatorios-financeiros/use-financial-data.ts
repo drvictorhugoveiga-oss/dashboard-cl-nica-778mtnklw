@@ -3,12 +3,24 @@ import { startOfMonth, endOfMonth, subMonths, eachMonthOfInterval } from 'date-f
 import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
 
-export type Period = 'this_month' | 'last_3' | 'last_6' | 'last_12' | 'custom'
 export type ViewType = 'general' | 'monthly'
 
-const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+export const MONTHS = [
+  'Jan',
+  'Fev',
+  'Mar',
+  'Abr',
+  'Mai',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Set',
+  'Out',
+  'Nov',
+  'Dez',
+]
 
-export function useFinancialData(period: Period, customStart?: string, customEnd?: string) {
+export function useFinancialData(month: number, year: number) {
   const [data, setData] = useState<{
     patients: any[]
     costs: any[]
@@ -48,18 +60,11 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
   const computed = useMemo(() => {
     if (!data) return null
 
-    let start = startOfMonth(new Date())
-    let end = endOfMonth(new Date())
+    const start = startOfMonth(new Date(year, month))
+    const end = endOfMonth(new Date(year, month))
 
-    if (period === 'last_3') start = startOfMonth(subMonths(new Date(), 2))
-    if (period === 'last_6') start = startOfMonth(subMonths(new Date(), 5))
-    if (period === 'last_12') start = startOfMonth(subMonths(new Date(), 11))
-    if (period === 'custom' && customStart && customEnd) {
-      start = startOfMonth(new Date(`${customStart}T00:00:00`))
-      end = endOfMonth(new Date(`${customEnd}T23:59:59`))
-    }
-
-    const months = eachMonthOfInterval({ start, end })
+    const chartStart = startOfMonth(subMonths(new Date(year, month), 5))
+    const months = eachMonthOfInterval({ start: chartStart, end })
 
     const filteredOpCosts = data.opCosts.filter((c) => {
       if (!c.date) return false
@@ -76,7 +81,7 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
     const filteredRevenue = data.revenue.filter((r) => {
       if (!r.date) return false
       const d = new Date(r.date.replace(' ', 'T'))
-      return d >= start && d <= end
+      return d >= start && d <= end && r.received_status === true
     })
 
     // General View Logic
@@ -159,7 +164,7 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
         .filter((r) => {
           if (!r.date) return false
           const d = new Date(r.date.replace(' ', 'T'))
-          return d >= mStart && d <= mEnd
+          return d >= mStart && d <= mEnd && r.received_status === true
         })
         .reduce((sum, r) => sum + r.value, 0)
 
@@ -212,7 +217,7 @@ export function useFinancialData(period: Period, customStart?: string, customEnd
       startDate: start,
       endDate: end,
     }
-  }, [data, period, customStart, customEnd])
+  }, [data, month, year])
 
   return { computed, loading, error, refetch: fetchData }
 }

@@ -13,18 +13,27 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useAuth } from '@/hooks/use-auth'
-import { useFinancialData, type Period } from './use-financial-data'
+import { useFinancialData, MONTHS } from './use-financial-data'
 import { SummaryCards } from './SummaryCards'
 import { ChartsSection } from './ChartsSection'
 import { TablesSection } from './TablesSection'
 
 export function RelatoriosFinanceiros() {
   const { usuario } = useAuth()
-  const [period, setPeriod] = useState<Period>('this_month')
-  const [customStart, setCustomStart] = useState('')
-  const [customEnd, setCustomEnd] = useState('')
+  const now = new Date()
 
-  const { computed, loading, error, refetch } = useFinancialData(period, customStart, customEnd)
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth().toString())
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear().toString())
+
+  const [appliedMonth, setAppliedMonth] = useState(now.getMonth())
+  const [appliedYear, setAppliedYear] = useState(now.getFullYear())
+
+  const { computed, loading, error, refetch } = useFinancialData(appliedMonth, appliedYear)
+
+  const handleApply = () => {
+    setAppliedMonth(parseInt(selectedMonth, 10))
+    setAppliedYear(parseInt(selectedYear, 10))
+  }
 
   useEffect(() => {
     const style = document.createElement('style')
@@ -72,38 +81,45 @@ export function RelatoriosFinanceiros() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-center bg-card p-4 rounded-lg border border-border shadow-sm print:hidden">
-        <div className="w-full sm:w-[240px]">
-          <Select value={period} onValueChange={(v: Period) => setPeriod(v)}>
+        <div className="w-full sm:w-[180px]">
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger>
-              <SelectValue placeholder="Selecione o período" />
+              <SelectValue placeholder="Mês" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="this_month">Este Mês</SelectItem>
-              <SelectItem value="last_3">Últimos 3 Meses</SelectItem>
-              <SelectItem value="last_6">Últimos 6 Meses</SelectItem>
-              <SelectItem value="last_12">Últimos 12 Meses</SelectItem>
-              <SelectItem value="custom">Personalizado</SelectItem>
+              {MONTHS.map((m, i) => (
+                <SelectItem key={i} value={i.toString()}>
+                  {m}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
-        {period === 'custom' && (
-          <div className="flex items-center gap-2 w-full sm:w-auto animate-fade-in">
-            <Input
-              type="date"
-              value={customStart}
-              onChange={(e) => setCustomStart(e.target.value)}
-              className="w-full sm:w-[150px]"
-            />
-            <span className="text-muted-foreground">até</span>
-            <Input
-              type="date"
-              value={customEnd}
-              onChange={(e) => setCustomEnd(e.target.value)}
-              className="w-full sm:w-[150px]"
-            />
-          </div>
-        )}
+        <div className="w-full sm:w-[120px]">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger>
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 5 }).map((_, i) => {
+                const year = new Date().getFullYear() - 2 + i
+                return (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button
+          onClick={handleApply}
+          className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          Aplicar
+        </Button>
       </div>
 
       {error && (

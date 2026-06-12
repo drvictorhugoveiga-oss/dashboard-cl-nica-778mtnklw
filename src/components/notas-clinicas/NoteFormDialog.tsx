@@ -78,6 +78,9 @@ export function NoteFormDialog({
   })
 
   const watchedValues = form.watch()
+  const selectedPatientData = patients?.find((p: any) => p.id === watchedValues.patient_id)
+  const isPatientInactive = selectedPatientData?.status === 'inactive'
+
   const lastSavedValues = useRef({
     content: '',
     patient_id: '',
@@ -133,7 +136,7 @@ export function NoteFormDialog({
       patient_id !== lastSavedValues.current.patient_id ||
       professional_id !== lastSavedValues.current.professional_id
 
-    if (!hasChanged) return
+    if (!hasChanged || isPatientInactive) return
 
     setSaveStatus('idle')
 
@@ -199,7 +202,7 @@ export function NoteFormDialog({
     }, 2000)
 
     return () => clearTimeout(timer)
-  }, [watchedValues, currentNoteId, open, user, onSuccess, form, toast])
+  }, [watchedValues, currentNoteId, open, user, onSuccess, form, toast, isPatientInactive])
 
   const applyTemplate = (templateHtml: string) => {
     const current = form.getValues('content')
@@ -376,8 +379,8 @@ export function NoteFormDialog({
                       </FormControl>
                       <SelectContent className="rounded-lg border-gray-200 max-h-[300px]">
                         {patients?.map((p: any) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.name}
+                          <SelectItem key={p.id} value={p.id} disabled={p.status === 'inactive'}>
+                            {p.name} {p.status === 'inactive' ? '(Inativo)' : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -493,7 +496,8 @@ export function NoteFormDialog({
               <Button
                 type="submit"
                 className="bg-success text-success-foreground hover:bg-success/90 transition-colors duration-200 rounded-lg shadow-subtle"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isPatientInactive}
+                title={isPatientInactive ? 'Não é possível editar notas de pacientes inativos' : ''}
               >
                 {isSubmitting ? 'Salvando...' : 'Salvar'}
               </Button>

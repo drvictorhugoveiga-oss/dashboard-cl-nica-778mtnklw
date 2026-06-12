@@ -53,6 +53,8 @@ type Props = {
 
 export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }: Props) {
   const { toast } = useToast()
+  const isInactive = patient?.status === 'inactive'
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
@@ -180,7 +182,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                     <FormLabel className="text-sm font-medium">Nome</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input {...field} className={getInputClass('name')} />
+                        <Input {...field} disabled={isInactive} className={getInputClass('name')} />
                         {renderFeedbackIcon('name')}
                       </div>
                     </FormControl>
@@ -196,7 +198,12 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                     <FormLabel className="text-sm font-medium">Email (Opcional)</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input type="email" {...field} className={getInputClass('email')} />
+                        <Input
+                          type="email"
+                          {...field}
+                          disabled={isInactive}
+                          className={getInputClass('email')}
+                        />
                         {renderFeedbackIcon('email')}
                       </div>
                     </FormControl>
@@ -212,7 +219,11 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                     <FormLabel className="text-sm font-medium">Telefone</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input {...field} className={getInputClass('phone')} />
+                        <Input
+                          {...field}
+                          disabled={isInactive}
+                          className={getInputClass('phone')}
+                        />
                         {renderFeedbackIcon('phone')}
                       </div>
                     </FormControl>
@@ -231,6 +242,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                         value={field.value ? parseISO(field.value) : undefined}
                         onChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                         error={!!form.formState.errors.birth_date}
+                        disabled={isInactive}
                       />
                     </FormControl>
                     <FormMessage className="text-xs text-destructive" />
@@ -243,7 +255,11 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Plano</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isInactive}
+                    >
                       <FormControl>
                         <SelectTrigger className={getInputClass('plan_id')}>
                           <SelectValue placeholder="Selecione..." />
@@ -289,7 +305,11 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Gênero</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isInactive}
+                    >
                       <FormControl>
                         <SelectTrigger className={getInputClass('gender')}>
                           <SelectValue placeholder="Selecione..." />
@@ -316,6 +336,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                         value={field.value ? parseISO(field.value) : undefined}
                         onChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                         error={!!form.formState.errors.contract_start}
+                        disabled={isInactive}
                       />
                     </FormControl>
                     <FormMessage className="text-xs text-destructive" />

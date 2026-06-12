@@ -103,7 +103,9 @@ export default function NotasClinicas() {
     })
   }, [notes, selectedPatientId, searchTerm])
 
-  const selectedPatientName = patients.find((p) => p.id === selectedPatientId)?.name || ''
+  const selectedPatient = patients.find((p) => p.id === selectedPatientId)
+  const isSelectedPatientInactive = selectedPatient?.status === 'inactive'
+  const selectedPatientName = selectedPatient?.name || ''
 
   const showEmptyState = !selectedPatientId && !searchTerm
 
@@ -136,6 +138,10 @@ export default function NotasClinicas() {
               setSelectedNote(null)
               setIsFormOpen(true)
             }}
+            disabled={isSelectedPatientInactive}
+            title={
+              isSelectedPatientInactive ? 'Pacientes inativos não podem receber novas notas' : ''
+            }
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-subtle transition-all duration-200 ease-out rounded-lg whitespace-nowrap"
           >
             <Plus className="mr-2 h-4 w-4" /> Nova Nota
@@ -181,9 +187,11 @@ export default function NotasClinicas() {
           <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-md mx-auto">
             {searchTerm
               ? 'Nenhum resultado corresponde à sua busca.'
-              : 'Este paciente ainda não possui nenhuma observação clínica registrada.'}
+              : isSelectedPatientInactive
+                ? 'Este paciente está inativo. Notas clínicas não podem ser adicionadas.'
+                : 'Este paciente ainda não possui nenhuma observação clínica registrada.'}
           </p>
-          {!searchTerm && (
+          {!searchTerm && !isSelectedPatientInactive && (
             <Button
               onClick={() => {
                 setSelectedNote(null)
