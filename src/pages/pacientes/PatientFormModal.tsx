@@ -57,6 +57,20 @@ const formSchema = z
       path: ['death_date'],
     },
   )
+  .refine(
+    (data) => {
+      if (data.is_deceased && data.death_date) {
+        const today = new Date()
+        today.setHours(23, 59, 59, 999)
+        return new Date(data.death_date) <= today
+      }
+      return true
+    },
+    {
+      message: 'Não pode ser no futuro',
+      path: ['death_date'],
+    },
+  )
 
 type Props = {
   isOpen: boolean
@@ -157,6 +171,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
         email: values.email || undefined,
         contract_end: values.contract_end || undefined,
         death_date: values.is_deceased ? values.death_date : '',
+        status: values.is_deceased ? 'inactive' : values.status,
       }
       delete data.is_deceased
 
