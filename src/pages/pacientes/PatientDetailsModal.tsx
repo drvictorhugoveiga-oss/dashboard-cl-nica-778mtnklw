@@ -123,6 +123,17 @@ export function PatientDetailsModal({ isOpen, onClose, patient }: Props) {
             <span className="font-semibold text-muted-foreground">Status:</span>
             <span className="col-span-2">{getStatusBadge(patient.status)}</span>
 
+            {patient.death_date && (
+              <>
+                <span className="font-semibold text-muted-foreground text-destructive">
+                  Data do Óbito:
+                </span>
+                <span className="col-span-2 font-medium text-destructive">
+                  {new Date(patient.death_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                </span>
+              </>
+            )}
+
             <span className="font-semibold text-muted-foreground">Gênero:</span>
             <span className="col-span-2 capitalize">
               {patient.gender === 'male'

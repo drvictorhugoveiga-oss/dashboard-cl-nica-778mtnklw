@@ -21,27 +21,42 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { Patient, createPatient, updatePatient, PatientFormData } from '@/services/patients'
 import { Plan } from '@/services/plans'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/use-auth'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Check, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const formSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório'),
-  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
-  phone: z.string().min(1, 'Telefone é obrigatório'),
-  birth_date: z
-    .string()
-    .min(1, 'Obrigatório')
-    .refine((val) => new Date(val) < new Date(), 'Deve ser no passado'),
-  plan_id: z.string().min(1, 'Plano é obrigatório'),
-  status: z.enum(['active', 'inactive', 'paused']),
-  gender: z.enum(['male', 'female', 'other']).optional(),
-  contract_start: z.string().min(1, 'Data de início é obrigatória'),
-  contract_end: z.string().optional(),
-})
+const formSchema = z
+  .object({
+    name: z.string().min(1, 'Nome é obrigatório'),
+    email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+    phone: z.string().min(1, 'Telefone é obrigatório'),
+    birth_date: z
+      .string()
+      .min(1, 'Obrigatório')
+      .refine((val) => new Date(val) < new Date(), 'Deve ser no passado'),
+    plan_id: z.string().min(1, 'Plano é obrigatório'),
+    status: z.enum(['active', 'inactive', 'paused']),
+    gender: z.enum(['male', 'female', 'other']).optional(),
+    contract_start: z.string().min(1, 'Data de início é obrigatória'),
+    contract_end: z.string().optional(),
+    is_deceased: z.boolean().default(false),
+    death_date: z.string().optional().or(z.literal('')),
+  })
+  .refine(
+    (data) => {
+      if (data.is_deceased && !data.death_date) return false
+      return true
+    },
+    {
+      message: 'Data do óbito é obrigatória',
+      path: ['death_date'],
+    },
+  )
 
 type Props = {
   isOpen: boolean
@@ -53,7 +68,10 @@ type Props = {
 
 export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }: Props) {
   const { toast } = useToast()
-  const isInactive = patient?.status === 'inactive'
+  const { user } = useAuth()
+
+  const isAdmin = user?.role === 'admin'
+  const isInactive = patient?.status === 'inactive' && !isAdmin
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,6 +85,8 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
       status: 'active',
       contract_start: '',
       contract_end: '',
+      is_deceased: false,
+      death_date: '',
     },
   })
 
@@ -83,6 +103,8 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
         gender: patient.gender,
         contract_start: patient.contract_start ? patient.contract_start.substring(0, 10) : '',
         contract_end: patient.contract_end ? patient.contract_end.substring(0, 10) : '',
+        is_deceased: !!patient.death_date,
+        death_date: patient.death_date ? patient.death_date.substring(0, 10) : '',
       })
     } else {
       form.reset({
@@ -95,12 +117,15 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
         gender: undefined,
         contract_start: format(new Date(), 'yyyy-MM-dd'),
         contract_end: '',
+        is_deceased: false,
+        death_date: '',
       })
     }
   }, [patient, form, isOpen])
 
   const start = form.watch('contract_start')
   const pId = form.watch('plan_id')
+  const isDeceased = form.watch('is_deceased')
 
   useEffect(() => {
     if (start && pId) {
@@ -119,13 +144,22 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
     }
   }, [start, pId, plans, form])
 
+  useEffect(() => {
+    if (isDeceased) {
+      form.setValue('status', 'inactive', { shouldValidate: true })
+    }
+  }, [isDeceased, form])
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       const data: PatientFormData = {
         ...values,
         email: values.email || undefined,
         contract_end: values.contract_end || undefined,
+        death_date: values.is_deceased ? values.death_date : '',
       }
+      delete data.is_deceased
+
       if (patient) {
         await updatePatient(patient.id, data)
         toast({ title: 'Paciente atualizado com sucesso', duration: 3000 })
@@ -173,6 +207,61 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-2">
+            {isAdmin && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="is_deceased"
+                  render={({ field }) => (
+                    <FormItem
+                      className={cn(
+                        'flex flex-row items-center justify-between rounded-lg border p-4',
+                        isDeceased ? 'md:col-span-1' : 'md:col-span-2',
+                      )}
+                    >
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base font-semibold text-destructive">
+                          Óbito
+                        </FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Marcar paciente como falecido
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isInactive && !isAdmin}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                {isDeceased && (
+                  <FormField
+                    control={form.control}
+                    name="death_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col justify-center">
+                        <FormLabel className="text-sm font-medium">Data do Óbito</FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value ? parseISO(field.value) : undefined}
+                            onChange={(date) =>
+                              field.onChange(date ? format(date, 'yyyy-MM-dd') : '')
+                            }
+                            error={!!form.formState.errors.death_date}
+                            disabled={isInactive && !isAdmin}
+                          />
+                        </FormControl>
+                        <FormMessage className="text-xs text-destructive" />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -283,7 +372,11 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isInactive || isDeceased}
+                    >
                       <FormControl>
                         <SelectTrigger className={getInputClass('status')}>
                           <SelectValue placeholder="Selecione..." />
@@ -369,12 +462,14 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
               <Button type="button" variant="secondary" onClick={onClose} className="rounded-[8px]">
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                className="bg-success hover:bg-success/90 text-success-foreground rounded-[8px]"
-              >
-                Salvar
-              </Button>
+              {(!isInactive || isAdmin) && (
+                <Button
+                  type="submit"
+                  className="bg-success hover:bg-success/90 text-success-foreground rounded-[8px]"
+                >
+                  Salvar
+                </Button>
+              )}
             </div>
           </form>
         </Form>
