@@ -102,11 +102,9 @@ export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDe
         <p className="text-sm text-muted-foreground mt-1 mb-4">
           Ajuste os filtros ou adicione um novo paciente.
         </p>
-        {!isStaff && (
-          <Button onClick={onCreate}>
-            <Plus className="mr-2 h-4 w-4" /> Novo Paciente
-          </Button>
-        )}
+        <Button onClick={onCreate}>
+          <Plus className="mr-2 h-4 w-4" /> Novo Paciente
+        </Button>
       </div>
     )
   }
@@ -155,25 +153,25 @@ export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDe
               >
                 <Eye className="size-4 mr-1" /> Ver
               </Button>
+              {(!isStaff || p.status !== 'inactive') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary hover:text-primary hover:bg-primary/10"
+                  onClick={() => onEdit(p)}
+                >
+                  <Edit2 className="size-4 mr-1" /> Editar
+                </Button>
+              )}
               {!isStaff && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-primary hover:text-primary hover:bg-primary/10"
-                    onClick={() => onEdit(p)}
-                  >
-                    <Edit2 className="size-4 mr-1" /> Editar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => setPatientToDelete(p)}
-                  >
-                    <Trash2 className="size-4 mr-1" /> Excluir
-                  </Button>
-                </>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setPatientToDelete(p)}
+                >
+                  <Trash2 className="size-4 mr-1" /> Excluir
+                </Button>
               )}
             </div>
           </div>
@@ -223,30 +221,33 @@ export function PatientTable({ patients, loading, onCreate, onEdit, onView, onDe
                       <Eye className="size-4 mr-1" />
                       Ver
                     </Button>
+                    {(!isStaff || p.status !== 'inactive') && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEdit(p)
+                        }}
+                        title="Editar"
+                      >
+                        <Edit2 className="size-4" />
+                      </Button>
+                    )}
                     {!isStaff && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                          onClick={() => onEdit(p)}
-                          title="Editar"
-                        >
-                          <Edit2 className="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setPatientToDelete(p)
-                          }}
-                          title="Excluir"
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setPatientToDelete(p)
+                        }}
+                        title="Excluir"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
                     )}
                   </div>
                 </TableCell>

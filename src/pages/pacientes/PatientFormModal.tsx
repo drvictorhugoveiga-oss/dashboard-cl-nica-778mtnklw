@@ -375,7 +375,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
-                      disabled={isInactive || isDeceased}
+                      disabled={!isAdmin || isDeceased}
                     >
                       <FormControl>
                         <SelectTrigger className={getInputClass('status')}>
@@ -462,7 +462,7 @@ export function PatientFormModal({ isOpen, onClose, patient, plans, onSuccess }:
               <Button type="button" variant="secondary" onClick={onClose} className="rounded-[8px]">
                 Cancelar
               </Button>
-              {(!isInactive || isAdmin) && (
+              {!isInactive && (
                 <Button
                   type="submit"
                   className="bg-success hover:bg-success/90 text-success-foreground rounded-[8px]"

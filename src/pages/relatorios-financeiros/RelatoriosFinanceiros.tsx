@@ -33,6 +33,7 @@ export function RelatoriosFinanceiros() {
   const handleApply = () => {
     setAppliedMonth(parseInt(selectedMonth, 10))
     setAppliedYear(parseInt(selectedYear, 10))
+    refetch()
   }
 
   useEffect(() => {
