@@ -43,15 +43,15 @@ export function ProfessionalCostsList({ isAdmin, period }: { isAdmin: boolean; p
   useRealtime('professional_costs', loadData)
   useRealtime('professionals', loadData)
 
-  const totalValue = useMemo(() => {
-    return costs.reduce((sum, cost) => sum + cost.cost_per_month, 0)
-  }, [costs])
-
   const sortedCosts = useMemo(() => {
     return costs
       .filter((cost) => !period || (cost.date && cost.date.startsWith(period)))
       .sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
   }, [costs, period])
+
+  const totalValue = useMemo(() => {
+    return sortedCosts.reduce((sum, cost) => sum + cost.cost_per_month, 0)
+  }, [sortedCosts])
 
   const handleDelete = async (id: string) => {
     if (!isAdmin) return
@@ -105,7 +105,7 @@ export function ProfessionalCostsList({ isAdmin, period }: { isAdmin: boolean; p
               <TableHead>Profissional</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
+              <TableHead className="text-right">Valor Mensal</TableHead>{' '}
               {isAdmin && <TableHead className="text-right w-[100px]">Ações</TableHead>}
             </TableRow>
           </TableHeader>

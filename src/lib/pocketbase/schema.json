@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T18:15:11.844Z",
+  "generatedAt": "2026-07-02T23:41:29.691Z",
   "collections": [
     {
       "name": "users",
@@ -311,6 +311,12 @@
           "required": false,
           "system": false,
           "selectValues": ["male", "female", "other"]
+        },
+        {
+          "name": "death_date",
+          "type": "date",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
