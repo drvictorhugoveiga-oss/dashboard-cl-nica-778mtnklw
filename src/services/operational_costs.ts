@@ -13,6 +13,7 @@ export interface OperationalCost {
     | 'Manutenção'
     | 'Pessoal'
     | 'Marketing'
+    | 'Impostos'
     | 'Outros'
   created: string
   updated: string

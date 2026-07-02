@@ -139,6 +139,7 @@ export function OperationalCostsDialog({
                   'Manutenção',
                   'Pessoal',
                   'Marketing',
+                  'Impostos',
                   'Outros',
                 ].map((c) => (
                   <SelectItem key={c} value={c}>
