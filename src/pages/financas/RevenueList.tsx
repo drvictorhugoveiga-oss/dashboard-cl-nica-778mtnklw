@@ -1,6 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
-import { getRevenues, deleteRevenue, Revenue } from '@/services/revenue'
-import { useRealtime } from '@/hooks/use-realtime'
+import { useState, useEffect } from 'react'
+import { Plus, Edit2, Trash2, CheckCircle2, Circle, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -10,37 +9,26 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, Edit2, Trash2, CheckCircle2, Circle } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
-import { RevenueFormModal } from './RevenueFormModal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import pb from '@/lib/pocketbase/client'
+import { useRealtime } from '@/hooks/use-realtime'
+import { format } from 'date-fns'
+import { RevenueDialog } from '@/components/financas/RevenueDialog'
+import { useToast } from '@/hooks/use-toast'
+import { Badge } from '@/components/ui/badge'
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-
-export function RevenueList({ isAdmin, period }: { isAdmin: boolean; period: string }) {
-  const [revenues, setRevenues] = useState<Revenue[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<Revenue | null>(null)
+export function RevenueList({ isAdmin, period }: { isAdmin?: boolean; period?: string }) {
+  const [data, setData] = useState<any[]>([])
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<any>(null)
   const { toast } = useToast()
-
-  const [categoryFilter, setCategoryFilter] = useState('all')
 
   const loadData = async () => {
     try {
-      const data = await getRevenues()
-      setRevenues(data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
+      const res = await pb.collection('revenue').getFullList({ sort: '-date,-created' })
+      setData(res)
+    } catch (e) {
+      console.error(e)
     }
   }
 
@@ -49,149 +37,137 @@ export function RevenueList({ isAdmin, period }: { isAdmin: boolean; period: str
   }, [])
   useRealtime('revenue', loadData)
 
-  const filteredRevenues = useMemo(() => {
-    return revenues.filter((r) => {
-      const matchCat = categoryFilter === 'all' || r.category === categoryFilter
-      const matchMonth = !period || (r.date && r.date.startsWith(period))
-      return matchCat && matchMonth
-    })
-  }, [revenues, categoryFilter, period])
-
-  const totalValue = useMemo(() => {
-    return filteredRevenues.reduce((sum, item) => sum + item.value, 0)
-  }, [filteredRevenues])
-
   const handleDelete = async (id: string) => {
-    if (!isAdmin) return
-    if (!confirm('Deseja realmente excluir este ganho?')) return
+    if (!confirm('Deseja realmente excluir este registro?')) return
     try {
-      await deleteRevenue(id)
-      toast({ title: 'Ganho removido', className: 'bg-success text-success-foreground' })
-    } catch (err) {
-      toast({ title: 'Erro ao remover', variant: 'destructive' })
+      await pb.collection('revenue').delete(id)
+      toast({ title: 'Excluído com sucesso' })
+    } catch (e) {
+      toast({ title: 'Erro ao excluir', variant: 'destructive' })
     }
   }
 
-  const handleEdit = (item: Revenue) => {
-    if (!isAdmin) return
-    setSelectedItem(item)
-    setModalOpen(true)
+  const handleToggleStatus = async (item: any) => {
+    try {
+      await pb.collection('revenue').update(item.id, { received_status: !item.received_status })
+    } catch (e) {
+      toast({ title: 'Erro ao atualizar status', variant: 'destructive' })
+    }
   }
+
+  const filteredData = data.filter((item) => !period || (item.date && item.date.startsWith(period)))
+  const totalRevenue = filteredData.reduce((sum, item) => sum + (item.value || 0), 0)
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-center">
-          <Card className="w-full sm:w-auto min-w-[200px] shadow-subtle border-border/50 bg-success/5">
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm font-medium text-success">Total de Ganhos</CardTitle>
-            </CardHeader>
-            <CardContent className="py-2 pt-0">
-              <div className="text-2xl font-bold">
-                {totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="Consultas">Consultas</SelectItem>
-                <SelectItem value="Planos">Planos</SelectItem>
-                <SelectItem value="Particulares">Particulares</SelectItem>
-                <SelectItem value="Outros">Outros</SelectItem>
-              </SelectContent>
-            </Select>
+      <Card className="bg-gradient-to-br from-card to-card/50 border-success/20">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-success/10">
+              <TrendingUp className="size-5 text-success" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Receita Bruta</p>
+              <p className="text-2xl font-bold text-success">
+                {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </p>
+            </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {isAdmin && (
-          <Button
-            onClick={() => {
-              setSelectedItem(null)
-              setModalOpen(true)
-            }}
-            className="w-full sm:w-auto bg-success hover:bg-success/90 text-success-foreground"
-          >
-            <Plus className="size-4 mr-2" />
-            Adicionar Ganho
-          </Button>
-        )}
-      </div>
-
-      <div className="rounded-lg border bg-card overflow-hidden shadow-subtle">
-        <Table>
-          <TableHeader className="bg-slate-50/80">
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead className="text-center">Status</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
-              {isAdmin && <TableHead className="text-right w-[100px]">Ações</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Ganhos</CardTitle>
+          {isAdmin !== false && (
+            <Button
+              onClick={() => {
+                setEditingItem(null)
+                setDialogOpen(true)
+              }}
+            >
+              <Plus className="size-4 mr-2" /> Novo Ganho
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={isAdmin ? 6 : 5} className="h-24 text-center">
-                  Carregando...
-                </TableCell>
+                <TableHead>Data</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead>Valor</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
-            ) : filteredRevenues.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={isAdmin ? 6 : 5} className="h-24 text-center">
-                  Nenhum ganho encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredRevenues.map((item) => (
-                <TableRow key={item.id} className="hover:bg-slate-50 transition-colors">
+            </TableHeader>
+            <TableBody>
+              {filteredData.map((item) => (
+                <TableRow key={item.id}>
                   <TableCell>
-                    {item.date ? item.date.substring(0, 10).split('-').reverse().join('/') : '-'}
+                    {item.date ? format(new Date(item.date), 'dd/MM/yyyy') : '-'}
                   </TableCell>
                   <TableCell className="font-medium">{item.description}</TableCell>
-                  <TableCell>{item.category}</TableCell>
-                  <TableCell className="text-center">
-                    {item.received_status ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-success bg-success/10 px-2 py-1 rounded-full">
-                        <CheckCircle2 className="size-3" /> Recebido
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-warning bg-warning/10 px-2 py-1 rounded-full">
-                        <Circle className="size-3" /> Pendente
-                      </span>
+                  <TableCell>
+                    <Badge variant="outline">{item.category}</Badge>
+                  </TableCell>
+                  <TableCell>R$ {item.value.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => handleToggleStatus(item)}
+                      className="flex items-center gap-1 hover:opacity-80"
+                    >
+                      {item.received_status ? (
+                        <Badge className="bg-emerald-500 hover:bg-emerald-600">
+                          <CheckCircle2 className="size-3 mr-1" /> Recebido
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">
+                          <Circle className="size-3 mr-1" /> Pendente
+                        </Badge>
+                      )}
+                    </button>
+                  </TableCell>
+                  <TableCell className="text-right space-x-2">
+                    {isAdmin !== false && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingItem(item)
+                            setDialogOpen(true)
+                          }}
+                        >
+                          <Edit2 className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(item.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </>
                     )}
                   </TableCell>
-                  <TableCell className="text-right text-success font-medium whitespace-nowrap">
-                    {item.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </TableCell>
-                  {isAdmin && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                          <Edit2 className="size-4 text-primary" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+              {filteredData.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                    Nenhum registro encontrado.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-      {isAdmin && (
-        <RevenueFormModal open={modalOpen} onOpenChange={setModalOpen} item={selectedItem} />
-      )}
+      <RevenueDialog open={dialogOpen} onOpenChange={setDialogOpen} item={editingItem} />
     </div>
   )
 }
