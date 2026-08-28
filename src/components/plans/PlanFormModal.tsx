@@ -44,7 +44,7 @@ export function PlanFormModal({ open, onOpenChange, plan, onSuccess }: Props) {
     reset,
     setError,
   } = useForm<PlanFormData>({
-    resolver: zodResolver(planSchema),
+    resolver: zodResolver(planSchema) as any,
     defaultValues: { name: '', duration_months: 1, price: 0, description: '' },
   })
 
@@ -54,7 +54,7 @@ export function PlanFormModal({ open, onOpenChange, plan, onSuccess }: Props) {
     }
   }, [open, plan, reset])
 
-  const onSubmit = async (data: PlanFormData) => {
+  const onSubmit = async (data: any) => {
     setIsSubmitting(true)
     try {
       if (plan) {

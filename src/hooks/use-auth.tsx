@@ -14,7 +14,9 @@ interface Usuario {
 
 interface AuthContextType {
   usuario: Usuario | null
+  user: Usuario | null
   carregando: boolean
+  loading: boolean
   erro: string | null
   temPermissao: (resource: string, action: string) => boolean
   login: (email: string, password: string) => Promise<{ error: string | null }>
@@ -250,7 +252,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ usuario, carregando, erro, temPermissao, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        usuario,
+        user: usuario,
+        carregando,
+        loading: carregando,
+        erro,
+        temPermissao,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

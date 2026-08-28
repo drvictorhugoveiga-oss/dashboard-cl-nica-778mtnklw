@@ -37,7 +37,7 @@ const schema = z
     type: z.enum(['follow_up', 'renewal_warning', 'contract_end', 'birthday']),
     title: z.string().min(1, 'Título é obrigatório'),
     description: z.string().optional(),
-    scheduled_date: z.date({ required_error: 'Data é obrigatória' }),
+    scheduled_date: z.date(),
     status: z.enum(['pending', 'completed', 'cancelled']).default('pending'),
   })
   .refine(
@@ -70,7 +70,7 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
   const [isLoading, setIsLoading] = useState(false)
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       patient_id: initialData?.patient_id || '',
       type: initialData?.type || 'follow_up',
@@ -89,7 +89,7 @@ export function ReminderForm({ initialData, onSuccess, onCancel }: Props) {
       .catch(() => {})
   }, [])
 
-  const onSubmit = async (data: FormValues) => {
+  const onSubmit = async (data: any) => {
     setIsLoading(true)
     try {
       const payload: any = {

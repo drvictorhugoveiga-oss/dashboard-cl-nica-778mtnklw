@@ -151,6 +151,8 @@ export function useFinancialData(month: number, year: number) {
       gainsVsLosses,
       totalRevenue: totalGains,
       totalCost: totalLosses,
+      professionalCosts: totalProfLosses,
+      operationalCosts: totalOpLosses,
       netMargin: totalGains > 0 ? ((totalGains - totalLosses) / totalGains) * 100 : 0,
       netProfit: totalGains - totalLosses,
     }
@@ -212,6 +214,7 @@ export function useFinancialData(month: number, year: number) {
     }
 
     return {
+      ...general,
       general,
       monthly,
       startDate: start,
