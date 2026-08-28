@@ -44,7 +44,7 @@ export function FinancasFormModal({ open, onOpenChange }: any) {
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       type: 'ganho',
       description: '',
@@ -105,6 +105,7 @@ export function FinancasFormModal({ open, onOpenChange }: any) {
     'Manutenção',
     'Pessoal',
     'Marketing',
+    'Impostos',
     'Outros',
   ]
 

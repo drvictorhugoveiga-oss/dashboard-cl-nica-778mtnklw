@@ -4,9 +4,14 @@ import { logFrontendAudit } from './audit'
 export interface ProfessionalCost {
   id: string
   professional_id: string
-  plan_id: string
+  plan_id?: string
   cost_per_month: number
   cost_per_session?: number
+  date?: string
+  description?: string
+  paid_status?: boolean
+  created?: string
+  updated?: string
   expand?: {
     professional_id?: any
     plan_id?: any

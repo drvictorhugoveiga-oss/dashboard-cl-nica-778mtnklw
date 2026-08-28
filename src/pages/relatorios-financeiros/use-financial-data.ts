@@ -66,23 +66,22 @@ export function useFinancialData(month: number, year: number) {
     const chartStart = startOfMonth(subMonths(new Date(year, month), 5))
     const months = eachMonthOfInterval({ start: chartStart, end })
 
-    const filteredOpCosts = data.opCosts.filter((c) => {
-      if (!c.date) return false
-      const d = new Date(c.date.replace(' ', 'T'))
+    const isDateInMonth = (dateStr?: string) => {
+      if (!dateStr) return false
+      const cleaned = dateStr.split(' ')[0]
+      const parts = cleaned.split('-')
+      if (parts.length >= 2) {
+        const itemYear = parseInt(parts[0], 10)
+        const itemMonth = parseInt(parts[1], 10) - 1 // 0-indexed
+        return itemYear === year && itemMonth === month
+      }
+      const d = new Date(dateStr.replace(' ', 'T'))
       return d >= start && d <= end
-    })
+    }
 
-    const filteredProfCosts = data.costs.filter((c) => {
-      if (!c.date) return false
-      const d = new Date(c.date.replace(' ', 'T'))
-      return d >= start && d <= end
-    })
-
-    const filteredRevenue = data.revenue.filter((r) => {
-      if (!r.date) return false
-      const d = new Date(r.date.replace(' ', 'T'))
-      return d >= start && d <= end && r.received_status === true
-    })
+    const filteredOpCosts = data.opCosts.filter((c) => isDateInMonth(c.date))
+    const filteredProfCosts = data.costs.filter((c) => isDateInMonth(c.date))
+    const filteredRevenue = data.revenue.filter((r) => isDateInMonth(r.date))
 
     // General View Logic
     const patientDetails = data.patients
@@ -162,28 +161,29 @@ export function useFinancialData(month: number, year: number) {
       const mStart = startOfMonth(m)
       const mEnd = endOfMonth(m)
 
+      const isDateInTargetMonth = (dateStr?: string) => {
+        if (!dateStr) return false
+        const cleaned = dateStr.split(' ')[0]
+        const parts = cleaned.split('-')
+        if (parts.length >= 2) {
+          const itemYear = parseInt(parts[0], 10)
+          const itemMonth = parseInt(parts[1], 10) - 1
+          return itemYear === m.getFullYear() && itemMonth === m.getMonth()
+        }
+        const d = new Date(dateStr.replace(' ', 'T'))
+        return d >= mStart && d <= mEnd
+      }
+
       const mRevenue = data.revenue
-        .filter((r) => {
-          if (!r.date) return false
-          const d = new Date(r.date.replace(' ', 'T'))
-          return d >= mStart && d <= mEnd && r.received_status === true
-        })
+        .filter((r) => isDateInTargetMonth(r.date))
         .reduce((sum, r) => sum + r.value, 0)
 
       const mOpCosts = data.opCosts
-        .filter((c) => {
-          if (!c.date) return false
-          const d = new Date(c.date.replace(' ', 'T'))
-          return d >= mStart && d <= mEnd
-        })
+        .filter((c) => isDateInTargetMonth(c.date))
         .reduce((sum, c) => sum + c.cost_value, 0)
 
       const mProfCosts = data.costs
-        .filter((c) => {
-          if (!c.date) return false
-          const d = new Date(c.date.replace(' ', 'T'))
-          return d >= mStart && d <= mEnd
-        })
+        .filter((c) => isDateInTargetMonth(c.date))
         .reduce((sum, c) => sum + (c.cost_per_month || c.cost_per_session || 0), 0)
 
       const mTotalCosts = mOpCosts + mProfCosts

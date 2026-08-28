@@ -59,8 +59,14 @@ export function RelatoriosFinanceiros() {
     }
   }, [])
 
-  if (usuario?.role !== 'admin' && usuario?.role_name !== 'admin') {
-    return <Navigate to="/" replace />
+  const { temPermissao } = useAuth()
+  const hasAccess =
+    usuario?.role === 'admin' ||
+    usuario?.role_name === 'admin' ||
+    temPermissao('financial_reports', 'view')
+
+  if (!hasAccess) {
+    return <Navigate to="/dashboard" replace />
   }
 
   const handlePrint = () => {

@@ -54,7 +54,7 @@ export function EntradaForm({
   const { toast } = useToast()
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       type: 'ganho',
       description: '',
@@ -74,6 +74,7 @@ export function EntradaForm({
     'Manutenção',
     'Pessoal',
     'Marketing',
+    'Impostos',
     'Outros',
   ]
   const currentCategories = watchType === 'ganho' ? ganhoCategories : despesaCategories

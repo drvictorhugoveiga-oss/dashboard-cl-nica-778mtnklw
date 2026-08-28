@@ -19,7 +19,7 @@ export interface PlanFormData {
 }
 
 export const getPlans = () => {
-  return pb.collection('plans').getFullList({
+  return pb.collection('plans').getFullList<Plan>({
     sort: 'price',
   })
 }

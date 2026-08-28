@@ -129,28 +129,29 @@ export function useDashboardData() {
       const currentMonth = today.getMonth()
       const currentYear = today.getFullYear()
 
+      const isDateInCurrentMonth = (dateStr?: string) => {
+        if (!dateStr) return false
+        const cleaned = dateStr.split(' ')[0]
+        const parts = cleaned.split('-')
+        if (parts.length >= 2) {
+          const itemYear = parseInt(parts[0], 10)
+          const itemMonth = parseInt(parts[1], 10) - 1
+          return itemYear === currentYear && itemMonth === currentMonth
+        }
+        const d = new Date(dateStr.replace(' ', 'T'))
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear
+      }
+
       const thisMonthRevenue = revenues
-        .filter((r) => {
-          if (!r.date) return false
-          const d = new Date(r.date.replace(' ', 'T'))
-          return d.getMonth() === currentMonth && d.getFullYear() === currentYear
-        })
+        .filter((r) => isDateInCurrentMonth(r.date))
         .reduce((sum, r) => sum + r.value, 0)
 
       const thisMonthProfCosts = costs
-        .filter((c) => {
-          if (!c.date) return false
-          const d = new Date(c.date.replace(' ', 'T'))
-          return d.getMonth() === currentMonth && d.getFullYear() === currentYear
-        })
+        .filter((c) => isDateInCurrentMonth(c.date))
         .reduce((sum, c) => sum + (c.cost_per_month || c.cost_per_session || 0), 0)
 
       const thisMonthOpCosts = opCosts
-        .filter((c) => {
-          if (!c.date) return false
-          const d = new Date(c.date.replace(' ', 'T'))
-          return d.getMonth() === currentMonth && d.getFullYear() === currentYear
-        })
+        .filter((c) => isDateInCurrentMonth(c.date))
         .reduce((sum, c) => sum + c.cost_value, 0)
 
       const grossRevenue = thisMonthRevenue
@@ -211,28 +212,29 @@ export function useDashboardData() {
         const mStart = startOfMonth(m)
         const mEnd = endOfMonth(m)
 
+        const isDateInIntervalMonth = (dateStr?: string) => {
+          if (!dateStr) return false
+          const cleaned = dateStr.split(' ')[0]
+          const parts = cleaned.split('-')
+          if (parts.length >= 2) {
+            const itemYear = parseInt(parts[0], 10)
+            const itemMonth = parseInt(parts[1], 10) - 1
+            return itemYear === m.getFullYear() && itemMonth === m.getMonth()
+          }
+          const d = new Date(dateStr.replace(' ', 'T'))
+          return d >= mStart && d <= mEnd
+        }
+
         const mRev = revenues
-          .filter((r) => {
-            if (!r.date) return false
-            const d = new Date(r.date.replace(' ', 'T'))
-            return d >= mStart && d <= mEnd
-          })
+          .filter((r) => isDateInIntervalMonth(r.date))
           .reduce((sum, r) => sum + r.value, 0)
 
         const mProfCost = costs
-          .filter((c) => {
-            if (!c.date) return false
-            const d = new Date(c.date.replace(' ', 'T'))
-            return d >= mStart && d <= mEnd
-          })
+          .filter((c) => isDateInIntervalMonth(c.date))
           .reduce((sum, c) => sum + (c.cost_per_month || c.cost_per_session || 0), 0)
 
         const mOpCost = opCosts
-          .filter((c) => {
-            if (!c.date) return false
-            const d = new Date(c.date.replace(' ', 'T'))
-            return d >= mStart && d <= mEnd
-          })
+          .filter((c) => isDateInIntervalMonth(c.date))
           .reduce((s, c) => s + c.cost_value, 0)
 
         return {

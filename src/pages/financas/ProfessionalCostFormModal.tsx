@@ -64,7 +64,7 @@ export function ProfessionalCostFormModal({
   }, [open])
 
   const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       professional_id: '',
       cost_per_month: 0,

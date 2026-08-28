@@ -39,10 +39,16 @@ const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
   cost_value: z.coerce.number().min(0.01, 'Valor deve ser maior que zero'),
   date: z.string().min(1, 'Data é obrigatória'),
-  category: z.enum(
-    ['Aluguel', 'Utilidades', 'Materiais', 'Manutenção', 'Pessoal', 'Marketing', 'Outros'],
-    { required_error: 'Categoria é obrigatória' },
-  ),
+  category: z.enum([
+    'Aluguel',
+    'Utilidades',
+    'Materiais',
+    'Manutenção',
+    'Pessoal',
+    'Marketing',
+    'Impostos',
+    'Outros',
+  ]),
   description: z.string().optional(),
 })
 
@@ -58,7 +64,7 @@ export function OperationalCostFormModal({
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       name: '',
       cost_value: 0,
@@ -177,6 +183,7 @@ export function OperationalCostFormModal({
                       <SelectItem value="Manutenção">Manutenção</SelectItem>
                       <SelectItem value="Pessoal">Pessoal</SelectItem>
                       <SelectItem value="Marketing">Marketing</SelectItem>
+                      <SelectItem value="Impostos">Impostos</SelectItem>
                       <SelectItem value="Outros">Outros</SelectItem>
                     </SelectContent>
                   </Select>

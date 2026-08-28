@@ -473,6 +473,7 @@ export default function Financas() {
                     'Manutenção',
                     'Pessoal',
                     'Marketing',
+                    'Impostos',
                     'Outros',
                   ].map((v) => (
                     <SelectItem key={v} value={v}>
