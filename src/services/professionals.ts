@@ -13,8 +13,10 @@ export interface Professional {
   updated: string
 }
 
-export const getProfessionals = () => {
+export const getProfessionals = (specialty?: string) => {
+  const filter = specialty ? `specialty = '${specialty}'` : ''
   return pb.collection('professionals').getFullList<Professional>({
+    filter,
     sort: 'name',
   })
 }

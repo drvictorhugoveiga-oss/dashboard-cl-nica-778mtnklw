@@ -12,10 +12,12 @@ export function DatePicker({
   value,
   onChange,
   error,
+  disabled,
 }: {
   value?: Date
   onChange: (date?: Date) => void
   error?: boolean
+  disabled?: boolean
 }) {
   const [inputValue, setInputValue] = React.useState('')
   const [isOpen, setIsOpen] = React.useState(false)
@@ -70,16 +72,18 @@ export function DatePicker({
         onChange={handleInputChange}
         placeholder="DD/MM/AAAA"
         maxLength={10}
+        disabled={disabled}
         className={cn(
           'w-full pr-10 rounded-[8px] transition-colors',
           error && 'border-destructive focus-visible:ring-destructive text-destructive',
         )}
       />
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover open={isOpen} onOpenChange={(open) => !disabled && setIsOpen(open)}>
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
+            disabled={disabled}
             className={cn(
               'absolute right-0 top-0 h-full w-10 px-0 py-0 hover:bg-transparent rounded-r-[8px]',
               error ? 'text-destructive' : 'text-muted-foreground',

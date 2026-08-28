@@ -35,9 +35,7 @@ const schema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória'),
   value: z.coerce.number().min(0.01, 'Valor deve ser maior que zero'),
   date: z.string().min(1, 'Data é obrigatória'),
-  category: z.enum(['Consultas', 'Planos', 'Particulares', 'Outros'], {
-    required_error: 'Categoria é obrigatória',
-  }),
+  category: z.enum(['Consultas', 'Planos', 'Particulares', 'Outros']),
   received_status: z.boolean(),
 })
 
@@ -53,7 +51,7 @@ export function RevenueFormModal({
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       description: '',
       value: 0,

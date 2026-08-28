@@ -68,48 +68,50 @@ export function useFinancialData(month: number, year: number) {
 
     const isDateInMonth = (dateStr?: string) => {
       if (!dateStr) return false
-      const cleaned = dateStr.split(' ')[0]
+      // Format can be YYYY-MM-DD or YYYY-MM-DD HH:mm:ss.sssZ or ISO string
+      const cleaned = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.split(' ')[0]
       const parts = cleaned.split('-')
       if (parts.length >= 2) {
         const itemYear = parseInt(parts[0], 10)
         const itemMonth = parseInt(parts[1], 10) - 1 // 0-indexed
         return itemYear === year && itemMonth === month
       }
-      const d = new Date(dateStr.replace(' ', 'T'))
-      return d >= start && d <= end
+      const d = new Date(dateStr)
+      return !isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month
     }
 
     const filteredOpCosts = data.opCosts.filter((c) => isDateInMonth(c.date))
     const filteredProfCosts = data.costs.filter((c) => isDateInMonth(c.date))
     const filteredRevenue = data.revenue.filter((r) => isDateInMonth(r.date))
 
-    // General View Logic
+    // Patient details calculation for the selected month competence
     const patientDetails = data.patients
       .map((p) => {
         const plan = p.expand?.plan_id
         const pStart = p.contract_start ? new Date(p.contract_start.replace(' ', 'T')) : null
-
-        let isNewContractInPeriod = false
-        if (pStart && pStart >= start && pStart <= end) {
-          isNewContractInPeriod = true
-        }
-
-        const gain = isNewContractInPeriod ? plan?.price || 0 : 0
-        const loss = filteredProfCosts
-          .filter((c) => c.plan_id === plan?.id)
-          .reduce((sum, c) => sum + (c.cost_per_month || c.cost_per_session || 0), 0)
-
-        // Count as active if they have contract starting or ending in period, or overlapping
         const pEnd = p.contract_end ? new Date(p.contract_end.replace(' ', 'T')) : null
+
+        // Patient was active during this target month
         const isActiveInPeriod =
           p.status !== 'inactive' && (!pStart || pStart <= end) && (!pEnd || pEnd >= start)
-        const activeMonths = isActiveInPeriod ? 1 : 0
+
+        // Contract newly initiated in this month or recurring plan price for active patient
+        let gain = 0
+        if (isActiveInPeriod && plan?.price) {
+          gain = plan.price
+        }
+
+        // Professional costs associated to this patient's plan in this month
+        // or general breakdown
+        const loss = filteredProfCosts
+          .filter((c) => (c.plan_id ? c.plan_id === plan?.id : false))
+          .reduce((sum, c) => sum + (c.cost_per_month || c.cost_per_session || 0), 0)
 
         return {
           id: p.id,
           patientName: p.name,
           planName: plan?.name || 'Sem Plano',
-          activeMonths,
+          activeMonths: isActiveInPeriod ? 1 : 0,
           gain,
           loss,
           netProfit: gain - loss,
@@ -163,15 +165,19 @@ export function useFinancialData(month: number, year: number) {
 
       const isDateInTargetMonth = (dateStr?: string) => {
         if (!dateStr) return false
-        const cleaned = dateStr.split(' ')[0]
+        const cleaned = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.split(' ')[0]
         const parts = cleaned.split('-')
         if (parts.length >= 2) {
           const itemYear = parseInt(parts[0], 10)
           const itemMonth = parseInt(parts[1], 10) - 1
           return itemYear === m.getFullYear() && itemMonth === m.getMonth()
         }
-        const d = new Date(dateStr.replace(' ', 'T'))
-        return d >= mStart && d <= mEnd
+        const d = new Date(dateStr)
+        return (
+          !isNaN(d.getTime()) &&
+          d.getFullYear() === m.getFullYear() &&
+          d.getMonth() === m.getMonth()
+        )
       }
 
       const mRevenue = data.revenue

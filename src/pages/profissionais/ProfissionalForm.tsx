@@ -36,12 +36,14 @@ import { cn } from '@/lib/utils'
 
 const formSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
-  specialty: z.enum(
-    ['enfermagem', 'fisioterapia', 'fonoaudiologia', 'medicina', 'nutrição', 'psicologia'],
-    {
-      required_error: 'Selecione uma especialidade',
-    },
-  ),
+  specialty: z.enum([
+    'enfermagem',
+    'fisioterapia',
+    'fonoaudiologia',
+    'medicina',
+    'nutrição',
+    'psicologia',
+  ]),
   email: z.string().email('Formato de email inválido').min(1, 'Email é obrigatório'),
   phone: z.string().min(1, 'Telefone é obrigatório'),
   pix_key: z.string().optional(),
@@ -68,7 +70,7 @@ export function ProfissionalForm({ open, onOpenChange, item }: Props) {
   }, [open])
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       name: '',
       specialty: 'enfermagem',

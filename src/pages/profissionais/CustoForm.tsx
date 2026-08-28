@@ -25,12 +25,8 @@ import { AlertCircle, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const formSchema = z.object({
-  cost_per_month: z.coerce
-    .number({ invalid_type_error: 'Valor numérico inválido' })
-    .min(0, 'O custo não pode ser negativo'),
-  cost_per_session: z.coerce
-    .number({ invalid_type_error: 'Valor numérico inválido' })
-    .min(0, 'O custo não pode ser negativo'),
+  cost_per_month: z.coerce.number().min(0, 'O custo não pode ser negativo'),
+  cost_per_session: z.coerce.number().min(0, 'O custo não pode ser negativo'),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -47,7 +43,7 @@ export function CustoForm({ open, onOpenChange, plan, costRecord, professionalId
   const { toast } = useToast()
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       cost_per_month: costRecord ? costRecord.cost_per_month : 0,
       cost_per_session: costRecord ? costRecord.cost_per_session || 0 : 0,
