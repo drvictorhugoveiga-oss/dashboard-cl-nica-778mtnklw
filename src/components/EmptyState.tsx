@@ -1,8 +1,14 @@
 import { FileQuestion } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import React from 'react'
 
 interface Props {
   title?: string
   description?: string
+  action?: {
+    label: string
+    onClick: () => void
+  } | React.ReactNode
 }
 
 export function EmptyState({

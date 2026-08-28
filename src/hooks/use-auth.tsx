@@ -10,6 +10,7 @@ interface Usuario {
   role_name?: string
   role?: string
   name?: string
+  avatar?: string
 }
 
 interface AuthContextType {
